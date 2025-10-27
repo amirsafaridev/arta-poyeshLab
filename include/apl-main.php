@@ -17,6 +17,10 @@ class APL_Main {
         
         $this->load_functions();
         $this->load_classes();
+        
+        // Load WooCommerce product types after WooCommerce is loaded
+        add_action('woocommerce_loaded', array($this, 'load_wc_product_types'));
+        
         \add_action('wp_enqueue_scripts', array($this, 'load_assets'));
         \add_action('admin_enqueue_scripts', array($this, 'load_assets'));
     }
@@ -63,6 +67,30 @@ class APL_Main {
             if (file_exists($file_path)) {
                 include_once $file_path;
             }
+        }
+    }
+    
+    /**
+     * Load WooCommerce product types after WooCommerce is loaded
+     */
+    public function load_wc_product_types() {
+        // Load WooCommerce product type classes
+        $wc_classes = array(
+            'apl-product-lab-test.php',
+            'apl-product-lab-package.php',
+            'apl-wc-product-types.php'
+        );
+        
+        foreach ($wc_classes as $class_file) {
+            $file_path = ARTA_POYESHLAB_PLUGIN_DIR . 'include/classes/' . $class_file;
+            if (file_exists($file_path)) {
+                include_once $file_path;
+            }
+        }
+        
+        // Initialize WooCommerce Product Types Manager
+        if (class_exists('APL_WC_Product_Types')) {
+            new \APL_WC_Product_Types();
         }
     }
     public function load_assets() {

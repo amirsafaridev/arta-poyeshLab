@@ -744,7 +744,7 @@ class APL_Ajax_Handlers {
         
         // Check if file was uploaded
         if (!isset($_FILES['profile_picture']) || $_FILES['profile_picture']['error'] !== UPLOAD_ERR_OK) {
-            $error_message = 'خطا در آپلود فایل';
+            $error_message = "مشکلی در آپلود فایل رخ داده است";
             if (isset($_FILES['profile_picture']['error'])) {
                 switch ($_FILES['profile_picture']['error']) {
                     case UPLOAD_ERR_INI_SIZE:

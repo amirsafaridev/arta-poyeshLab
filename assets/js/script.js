@@ -2636,11 +2636,8 @@ document.addEventListener('DOMContentLoaded', function() {
             formData.append('profile_picture', selectedFile);
             formData.append('nonce', document.querySelector('input[name="profile_picture_nonce"]').value);
             
-            console.log('Uploading file:', selectedFile.name);
-            console.log('Nonce:', document.querySelector('input[name="profile_picture_nonce"]').value);
-            
             // Upload file
-            fetch(apl_ajax.ajax_url, {
+            fetch(apl_ajax.ajaxurl, {
                 method: 'POST',
                 body: formData
             })
@@ -2689,7 +2686,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 formData.append('action', 'apl_remove_profile_picture');
                 formData.append('nonce', document.querySelector('input[name="profile_picture_nonce"]').value);
                 
-                fetch(apl_ajax.ajax_url, {
+                fetch(apl_ajax.ajaxurl, {
                     method: 'POST',
                     body: formData
                 })
@@ -2760,7 +2757,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     formData.append('action', 'apl_remove_profile_picture');
                     formData.append('nonce', document.querySelector('input[name="profile_picture_nonce"]').value);
                     
-                    fetch(apl_ajax.ajax_url, {
+                    fetch(apl_ajax.ajaxurl, {
                         method: 'POST',
                         body: formData
                     })
