@@ -1,0 +1,405 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;600;700&display=swap');
+
+* {
+    font-family: 'Vazirmatn', sans-serif;
+}
+
+.medical-gradient { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); }
+.card-hover { transition: all 0.3s ease; }
+.card-hover:hover { transform: translateY(-2px); box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+.status-pending { background: #fef3c7; color: #92400e; }
+.status-progress { background: #dbeafe; color: #1e40af; }
+.status-completed { background: #d1fae5; color: #065f46; }
+.status-cancelled { background: #fee2e2; color: #991b1b; }
+
+/* RTL specific styles */
+.rtl-flip {
+    transform: scaleX(-1);
+}
+
+/* Custom scrollbar for RTL */
+.overflow-x-auto::-webkit-scrollbar {
+    height: 4px;
+}
+
+.overflow-x-auto::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+
+.overflow-x-auto::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 2px;
+}
+
+/* Loading animations */
+.btn-loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading-dots {
+    display: inline-flex;
+    align-items: center;
+}
+
+.loading-dots::after {
+    content: '';
+    animation: dots 1.5s infinite;
+}
+
+@keyframes dots {
+    0%, 20% { content: ''; }
+    40% { content: '.'; }
+    60% { content: '..'; }
+    80%, 100% { content: '...'; }
+}
+
+/* OTP Input animations */
+.otp-input:focus {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+.otp-input.filled {
+    background-color: #f0f9ff;
+    border-color: #3b82f6;
+}
+
+.register-otp-input:focus {
+    transform: scale(1.05);
+    transition: transform 0.2s ease;
+}
+
+.register-otp-input.filled {
+    background-color: #f0fdf4;
+    border-color: #16a34a;
+}
+
+/* Pulse animation for loading states */
+.pulse-loading {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: .5; }
+}
+
+/* Smooth transitions */
+.auth-form {
+    transition: all 0.3s ease-in-out;
+}
+
+.auth-step {
+    transition: all 0.3s ease-in-out;
+}
+
+/* Success animation */
+@keyframes checkmark {
+    0% { transform: scale(0); }
+    50% { transform: scale(1.2); }
+    100% { transform: scale(1); }
+}
+
+.success-checkmark {
+    animation: checkmark 0.6s ease-in-out;
+}
+
+/* Responsive Design Improvements */
+
+/* Mobile First Approach */
+@media (max-width: 640px) {
+    /* Auth Screen Mobile */
+    .auth-screen-container {
+        padding: 1rem;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+    }
+    
+    .auth-card {
+        width: 100%;
+        max-width: none;
+        margin: 0;
+        border-radius: 1rem;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+    }
+    
+    /* OTP Inputs Mobile */
+    .otp-container {
+        gap: 0.5rem;
+        justify-content: center;
+        flex-wrap: nowrap;
+    }
+    
+    .otp-input, .register-otp-input {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 1rem;
+    }
+    
+    /* Dashboard Mobile */
+    .dashboard-header {
+        padding: 0.75rem 1rem;
+        height: auto;
+        min-height: 4rem;
+    }
+    
+    .dashboard-header h1 {
+        font-size: 1.125rem;
+    }
+    
+    .dashboard-content {
+        padding: 1rem;
+    }
+    
+    /* Cards Mobile */
+    .quick-action-card {
+        padding: 1rem;
+        text-align: center;
+    }
+    
+    .quick-action-card h3 {
+        font-size: 0.875rem;
+        margin-bottom: 0.5rem;
+    }
+    
+    .quick-action-card p {
+        font-size: 0.75rem;
+        line-height: 1.3;
+    }
+    
+    /* Form Mobile */
+    .form-grid-mobile {
+        grid-template-columns: 1fr;
+        gap: 1rem;
+    }
+    
+    .form-input-mobile {
+        padding: 0.75rem;
+        font-size: 1rem;
+    }
+    
+    /* Button Mobile */
+    .btn-mobile {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.875rem;
+        width: 100%;
+    }
+    
+    /* Modal Mobile */
+    .modal-mobile {
+        margin: 1rem;
+        max-width: calc(100vw - 2rem);
+        border-radius: 1rem;
+    }
+    
+    /* Mobile Sidebar */
+    .mobile-sidebar-open {
+        transform: translateX(0);
+    }
+    
+    /* Service Cards Mobile */
+    .service-grid-mobile {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+    }
+    
+    .service-card-mobile {
+        padding: 1rem;
+        border-radius: 0.75rem;
+    }
+    
+    /* Delivery Method Grid Mobile */
+    .grid-cols-1.sm\\:grid-cols-3 {
+        grid-template-columns: 1fr;
+    }
+    
+    /* File Upload Mobile */
+    .file-upload-mobile {
+        padding: 1.5rem 1rem;
+        border-radius: 0.75rem;
+    }
+    
+    .file-preview-mobile {
+        padding: 0.75rem;
+        border-radius: 0.5rem;
+    }
+    
+    .file-preview-image {
+        width: 3rem;
+        height: 3rem;
+    }
+}
+
+/* Tablet Styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+    .tablet-grid-2 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .tablet-grid-3 {
+        grid-template-columns: repeat(3, 1fr);
+    }
+    
+    .tablet-padding {
+        padding: 1.5rem;
+    }
+    
+    .tablet-text-base {
+        font-size: 1rem;
+    }
+    
+    .tablet-gap-4 {
+        gap: 1rem;
+    }
+    
+    /* Dashboard Tablet */
+    .dashboard-tablet {
+        padding: 1.5rem;
+    }
+    
+    .sidebar-tablet {
+        display: none;
+    }
+    
+    /* Cards Tablet */
+    .card-tablet {
+        padding: 1.25rem;
+    }
+    
+    /* Form Tablet */
+    .form-tablet {
+        max-width: none;
+    }
+    
+    /* Delivery Method Grid Tablet */
+    .grid-cols-1.sm\\:grid-cols-3 {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* Large Mobile (iPhone Plus, etc.) */
+@media (min-width: 414px) and (max-width: 640px) {
+    .otp-input, .register-otp-input {
+        width: 3rem;
+        height: 3rem;
+        font-size: 1.125rem;
+    }
+    
+    .otp-container {
+        gap: 0.75rem;
+    }
+}
+
+/* Small Mobile */
+@media (max-width: 375px) {
+    .auth-card {
+        padding: 1.5rem;
+    }
+    
+    .otp-input, .register-otp-input {
+        width: 2.25rem;
+        height: 2.25rem;
+        font-size: 0.875rem;
+    }
+    
+    .otp-container {
+        gap: 0.375rem;
+    }
+    
+    .dashboard-content {
+        padding: 0.75rem;
+    }
+    
+    .quick-action-card {
+        padding: 0.75rem;
+    }
+    
+    .form-input-mobile {
+        padding: 0.625rem;
+        font-size: 0.875rem;
+    }
+}
+
+/* Landscape Mobile */
+@media (max-height: 500px) and (orientation: landscape) {
+    .auth-screen-container {
+        padding: 0.5rem;
+        align-items: flex-start;
+        padding-top: 1rem;
+    }
+    
+    .auth-card {
+        margin-top: 0;
+    }
+    
+    .dashboard-header {
+        padding: 0.5rem 1rem;
+        min-height: 3rem;
+    }
+}
+
+/* High DPI Displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+    .auth-card, .dashboard-card {
+        border-width: 0.5px;
+    }
+}
+
+/* Touch Device Optimizations */
+@media (hover: none) and (pointer: coarse) {
+    .card-hover:hover {
+        transform: none;
+    }
+    
+    .card-hover:active {
+        transform: scale(0.98);
+    }
+    
+    button:active {
+        transform: scale(0.98);
+    }
+    
+    .nav-item:active, .nav-tab:active {
+        background-color: rgba(59, 130, 246, 0.1);
+    }
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+    .card-hover, .auth-form, .auth-step, .otp-input, .register-otp-input {
+        transition: none;
+    }
+    
+    .success-checkmark {
+        animation: none;
+    }
+}
+
+/* Dark Mode Support (if needed) */
+@media (prefers-color-scheme: dark) {
+    /* This can be expanded if dark mode is needed */
+}
+
+/* Package selection styles */
+.package-card {
+    transition: all 0.3s ease;
+}
+
+.package-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+}
+
+.package-card.selected {
+    border-color: #93c5fd !important;
+    background-color: #eff6ff !important;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.package-selected {
+    transition: all 0.2s ease;
+}
