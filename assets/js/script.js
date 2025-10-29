@@ -174,6 +174,9 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Initialize profile form
     initializeProfileForm();
+    
+    // Initialize delivery method selection to hide package cards initially
+    handleDeliveryMethodSelection();
 });
 
 // Add event listeners to clear errors when user types
@@ -1041,53 +1044,12 @@ function formatFileSize(bytes) {
 
 // Initialize Persian DatePicker
 function initializeDatePicker() {
-    if (typeof $.fn.persianDatepicker !== 'undefined') {
+    if (typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && typeof $.fn.persianDatepicker !== 'undefined') {
         $('#persianDatePicker').persianDatepicker({
             format: 'YYYY/MM/DD',
-            initialValue: false,
             autoClose: true,
-            calendar: {
-                persian: {
-                    locale: 'fa',
-                    showHint: true,
-                    leapYearMode: 'algorithmic'
-                }
-            },
-            navigator: {
-                enabled: true,
-                scroll: {
-                    enabled: true
-                },
-                text: {
-                    btnNextText: ">",
-                    btnPrevText: "<"
-                }
-            },
-            toolbox: {
-                enabled: true,
-                calendarSwitch: {
-                    enabled: true,
-                    format: 'MMMM'
-                },
-                todayButton: {
-                    enabled: true,
-                    text: {
-                        fa: "امروز"
-                    }
-                },
-                submitButton: {
-                    enabled: true,
-                    text: {
-                        fa: "تایید"
-                    }
-                },
-                calendarSwitchFormat: 'MMMM'
-            },
-            dayPicker: {
-                enabled: true,
-                titleFormat: 'YYYY MMMM'
-            },
-            responsive: true
+            showToday: true,
+            showClear: true
         });
     } else {
         // Fallback if Persian datepicker doesn't load
@@ -1550,6 +1512,162 @@ function switchAuthTab(tab) {
 let currentStep = 1;
 let selectedPackages = [];
 
+// Validate step 1 selections
+function validateStep1() {
+    const requestType = document.querySelector('input[name="requestType"]:checked');
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
+    
+    let isValid = true;
+    let errorMessage = '';
+    
+    // Clear previous error messages
+    clearStep1Errors();
+    
+    if (!requestType) {
+        showStep1Error('requestTypeError', 'لطفاً نحوه درخواست خدمات را انتخاب کنید');
+        isValid = false;
+    }
+    
+    if (!deliveryMethod) {
+        showStep1Error('deliveryMethodError', 'لطفاً نحوه ارائه خدمات را انتخاب کنید');
+        isValid = false;
+    }
+    
+    if (isValid) {
+        goToStep(2);
+    }
+    
+    return isValid;
+}
+
+// Show error message for step 1
+function showStep1Error(errorId, message) {
+    // Remove existing error if any
+    const existingError = document.getElementById(errorId);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.id = errorId;
+    errorDiv.className = 'text-red-600 text-sm mt-2 flex items-center';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle ml-2"></i>${message}`;
+    
+    // Add error message after the relevant section
+    if (errorId === 'requestTypeError') {
+        const requestTypeSection = document.querySelector('input[name="requestType"]').closest('.grid').parentElement;
+        requestTypeSection.appendChild(errorDiv);
+    } else if (errorId === 'deliveryMethodError') {
+        const deliveryMethodSection = document.querySelector('input[name="deliveryMethod"]').closest('.grid').parentElement;
+        deliveryMethodSection.appendChild(errorDiv);
+    }
+}
+
+// Clear step 1 error messages
+function clearStep1Errors() {
+    const requestTypeError = document.getElementById('requestTypeError');
+    const deliveryMethodError = document.getElementById('deliveryMethodError');
+    
+    if (requestTypeError) requestTypeError.remove();
+    if (deliveryMethodError) deliveryMethodError.remove();
+}
+
+// Validate step 2 selections based on service request method
+function validateStep2() {
+    const requestType = document.querySelector('input[name="requestType"]:checked');
+    
+    if (!requestType) {
+        console.error('No request type selected');
+        return false;
+    }
+    
+    let isValid = true;
+    
+    // Clear previous error messages
+    clearStep2Errors();
+    
+    switch (requestType.value) {
+        case 'upload':
+            // Validate file upload
+            const prescriptionFile = document.getElementById('prescriptionFile');
+            if (!prescriptionFile || !prescriptionFile.files || prescriptionFile.files.length === 0) {
+                showStep2Error('fileUploadError', 'لطفاً فایل نسخه را بارگذاری کنید');
+                isValid = false;
+            }
+            break;
+            
+        case 'electronic':
+            // Validate national ID and doctor name
+            const nationalIdInput = document.querySelector('#step2 input[placeholder*="کد ملی"]');
+            const doctorNameInput = document.querySelector('#step2 input[placeholder*="نام پزشک"]');
+            
+            if (!nationalIdInput || !nationalIdInput.value.trim()) {
+                showStep2Error('nationalIdError', 'لطفاً کد ملی بیمار را وارد کنید');
+                isValid = false;
+            }
+            
+            if (!doctorNameInput || !doctorNameInput.value.trim()) {
+                showStep2Error('doctorNameError', 'لطفاً نام پزشک را وارد کنید');
+                isValid = false;
+            }
+            break;
+            
+        case 'packages':
+            // Validate at least one package selected
+            if (selectedPackages.length === 0) {
+                showStep2Error('packageSelectionError', 'لطفاً حداقل یک بسته آزمایش انتخاب کنید');
+                isValid = false;
+            }
+            break;
+    }
+    
+    if (isValid) {
+        goToStep(3);
+    }
+    
+    return isValid;
+}
+
+// Show error message for step 2
+function showStep2Error(errorId, message) {
+    // Remove existing error if any
+    const existingError = document.getElementById(errorId);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.id = errorId;
+    errorDiv.className = 'text-red-600 text-sm mt-2 flex items-center';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle ml-2"></i>${message}`;
+    
+    // Add error message after the relevant section
+    if (errorId === 'fileUploadError') {
+        const fileUploadSection = document.getElementById('prescriptionFile').closest('.border-2');
+        fileUploadSection.appendChild(errorDiv);
+    } else if (errorId === 'nationalIdError') {
+        const nationalIdSection = document.querySelector('#step2 input[placeholder*="کد ملی"]').closest('div');
+        nationalIdSection.appendChild(errorDiv);
+    } else if (errorId === 'doctorNameError') {
+        const doctorNameSection = document.querySelector('#step2 input[placeholder*="نام پزشک"]').closest('div');
+        doctorNameSection.appendChild(errorDiv);
+    } else if (errorId === 'packageSelectionError') {
+        const packageSection = document.querySelector('.package-card').closest('.space-y-4');
+        packageSection.appendChild(errorDiv);
+    }
+}
+
+// Clear step 2 error messages
+function clearStep2Errors() {
+    const errorIds = ['fileUploadError', 'nationalIdError', 'doctorNameError', 'packageSelectionError'];
+    errorIds.forEach(errorId => {
+        const error = document.getElementById(errorId);
+        if (error) error.remove();
+    });
+}
+
 // Navigate between steps
 function goToStep(stepNumber) {
     // Hide all steps
@@ -1569,6 +1687,11 @@ function goToStep(stepNumber) {
 
     // Update progress indicators
     updateProgressIndicators(stepNumber);
+
+    // Clear selected packages when going back to step 1
+    if (stepNumber === 1) {
+        clearSelectedPackages();
+    }
 
     // Populate order summary when going to step 5
     if (stepNumber === 5) {
@@ -1642,22 +1765,35 @@ function handleDeliveryMethodSelection() {
     const labAddressSection = document.getElementById('labAddressSection');
 
     // Hide all sections first
-    serviceLocationSection.classList.add('hidden');
-    labScheduleSection.classList.add('hidden');
-    labAddressSection.classList.add('hidden');
+    if (serviceLocationSection) serviceLocationSection.classList.add('hidden');
+    if (labScheduleSection) labScheduleSection.classList.add('hidden');
+    if (labAddressSection) labAddressSection.classList.add('hidden');
+
+    // Hide all package cards first
+    const packageCards = document.querySelectorAll('.package-card');
+    packageCards.forEach(card => {
+        card.style.display = 'none';
+    });
 
     if (deliveryMethod) {
+        // Show relevant sections based on delivery method
         switch (deliveryMethod.value) {
-            case 'home':
+            case 'home_sampling':
                 serviceLocationSection.classList.remove('hidden');
                 break;
-            case 'lab':
+            case 'lab_visit':
                 labScheduleSection.classList.remove('hidden');
                 break;
-            case 'sample':
+            case 'sample_shipping':
                 labAddressSection.classList.remove('hidden');
                 break;
         }
+
+        // Show package cards that match the selected delivery method
+        const matchingPackages = document.querySelectorAll(`[data-package-service-delivery="${deliveryMethod.value}"]`);
+        matchingPackages.forEach(card => {
+            card.style.display = 'block';
+        });
     }
 }
 
@@ -1704,6 +1840,11 @@ const packageData = {
 // Toggle package selection
 function togglePackage(packageId) {
     const packageCard = document.querySelector(`[onclick="togglePackage('${packageId}')"]`);
+    if (!packageCard) {
+        console.error(`Package card with onclick="togglePackage('${packageId}')" not found`);
+        return;
+    }
+    
     const selectedIcon = packageCard.querySelector('.package-selected');
     const selectBtn = packageCard.querySelector('.package-select-btn');
     const selectText = packageCard.querySelector('.select-text');
@@ -1739,12 +1880,47 @@ function togglePackage(packageId) {
         // Add to selectedPackages array
         const package = {
             id: packageId,
-            name: packageData[packageId].name,
-            price: packageData[packageId].price
+            name: packageCard.dataset.packageName,
+            price: packageCard.dataset.packagePrice,
+            serviceDelivery: packageCard.dataset.packageServiceDelivery
         };
     selectedPackages.push(package);
     }
     
+    updateSelectedPackages();
+    updateOrderSummary();
+    
+    // Clear step 2 errors when package selection changes
+    clearStep2Errors();
+}
+
+// Clear all selected packages
+function clearSelectedPackages() {
+    // Clear the selectedPackages array
+    selectedPackages = [];
+    
+    // Reset all package cards to unselected state
+    const packageCards = document.querySelectorAll('.package-card');
+    packageCards.forEach(card => {
+        const selectedIcon = card.querySelector('.package-selected');
+        const selectBtn = card.querySelector('.package-select-btn');
+        const selectText = card.querySelector('.select-text');
+        const deselectText = card.querySelector('.deselect-text');
+        
+        if (selectedIcon) selectedIcon.classList.add('hidden');
+        if (selectBtn) {
+            selectBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+            selectBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+        }
+        if (selectText) selectText.classList.remove('hidden');
+        if (deselectText) deselectText.classList.add('hidden');
+        
+        // Reset card styling
+        card.classList.remove('border-blue-300', 'bg-blue-50');
+        card.classList.add('border-gray-200');
+    });
+    
+    // Update the display
     updateSelectedPackages();
     updateOrderSummary();
 }
@@ -2032,39 +2208,51 @@ function initializeMultiStepForm() {
     // Add event listeners for service type selection
     const requestTypeInputs = document.querySelectorAll('input[name="requestType"]');
     requestTypeInputs.forEach(input => {
-        input.addEventListener('change', handleServiceTypeSelection);
+        input.addEventListener('change', function() {
+            handleServiceTypeSelection();
+            clearStep1Errors(); // Clear error messages when user makes selection
+        });
     });
 
     // Add event listeners for delivery method selection
     const deliveryMethodInputs = document.querySelectorAll('input[name="deliveryMethod"]');
     deliveryMethodInputs.forEach(input => {
-        input.addEventListener('change', handleDeliveryMethodSelection);
-    });
-
-    // File upload is handled by initializeFileUpload function
-
-    // Initialize package selection buttons
-    const packageButtons = document.querySelectorAll('#testPackagesForm button');
-    packageButtons.forEach(button => {
-        button.addEventListener('click', function() {
-            const packageCard = this.closest('.bg-white');
-            const packageName = packageCard.querySelector('h3').textContent;
-            const packagePrice = packageCard.querySelector('.text-blue-600').textContent;
-            addPackageToCart(packageName, packagePrice);
+        input.addEventListener('change', function() {
+            handleDeliveryMethodSelection();
+            clearStep1Errors(); // Clear error messages when user makes selection
         });
     });
 
+    // Add event listeners for step 2 form fields
+    // File upload
+    const prescriptionFile = document.getElementById('prescriptionFile');
+    if (prescriptionFile) {
+        prescriptionFile.addEventListener('change', clearStep2Errors);
+    }
+
+    // National ID and Doctor Name inputs
+    const nationalIdInput = document.querySelector('#step2 input[placeholder*="کد ملی"]');
+    const doctorNameInput = document.querySelector('#step2 input[placeholder*="نام پزشک"]');
+    
+    if (nationalIdInput) {
+        nationalIdInput.addEventListener('input', clearStep2Errors);
+    }
+    if (doctorNameInput) {
+        doctorNameInput.addEventListener('input', clearStep2Errors);
+    }
+
+    // File upload is handled by initializeFileUpload function
+
+    // Package selection is handled by togglePackage function via onclick events
+
     // Initialize lab date picker
     const labDatePicker = document.getElementById('labDatePicker');
-    if (labDatePicker && typeof $ !== 'undefined') {
+    if (labDatePicker && typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && typeof $.fn.persianDatepicker !== 'undefined') {
         $(labDatePicker).persianDatepicker({
             format: 'YYYY/MM/DD',
-            altField: '.observer-example-alt',
-            altFormat: 'YYYY/MM/DD',
-            observer: true,
-            timePicker: {
-                enabled: false
-            }
+            autoClose: true,
+            showToday: true,
+            showClear: true
         });
     }
 }

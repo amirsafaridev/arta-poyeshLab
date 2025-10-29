@@ -33,6 +33,7 @@ class APL_My_Account {
         
         if ($request_uri === 'lab-portal') {
             status_header(200);
+            
             return ARTA_POYESHLAB_PLUGIN_DIR . 'include/template/layout.php';
         }
         

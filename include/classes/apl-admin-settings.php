@@ -48,8 +48,8 @@ class APL_Admin_Settings {
         
         add_submenu_page(
             'apl-settings',
-            'تنظیمات صفحه لاگین',
-            'تنظیمات صفحه لاگین',
+            'تنظیمات اصلی',
+            'تنظیمات اصلی',
             'manage_options',
             'apl-login-settings',
             array($this, 'login_settings_page')
@@ -179,7 +179,7 @@ class APL_Admin_Settings {
     public function login_settings_page() {
         ?>
         <div class="wrap">
-            <h1>تنظیمات صفحه لاگین</h1>
+            <h1>تنظیمات اصلی</h1>
             
             <form method="post" action="options.php">
                 <?php
@@ -286,37 +286,15 @@ class APL_Admin_Settings {
         <div class="wrap">
             <h1>لاگ سیستم</h1>
             
-            <!-- Statistics -->
-            <div  style="margin-bottom: 20px;background: white;padding: 30px 60px;margin-top: 20px;">
-                <h2>آمار کلی</h2>
-                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
-                    <div>
-                        <h3>تعداد کل لاگ‌ها</h3>
-                        <p style="font-size: 24px; font-weight: bold; color: #0073aa;"><?php echo $stats['total']; ?></p>
-                    </div>
-                    <div>
-                        <h3>امروز</h3>
-                        <p style="font-size: 24px; font-weight: bold; color: #00a32a;"><?php echo $stats['today']; ?></p>
-                    </div>
-                    <div>
-                        <h3>این هفته</h3>
-                        <p style="font-size: 24px; font-weight: bold; color: #dba617;"><?php echo $stats['this_week']; ?></p>
-                    </div>
-                    <div>
-                        <h3>این ماه</h3>
-                        <p style="font-size: 24px; font-weight: bold; color: #d63638;"><?php echo $stats['this_month']; ?></p>
-                    </div>
-                </div>
-            </div>
+            
             
             <!-- Logs Table -->
             <div>
-                <h2>لاگ‌های سیستم</h2>
                 
                 <?php if (empty($logs)): ?>
                     <p>هیچ لاگی یافت نشد.</p>
                 <?php else: ?>
-                    <table class="wp-list-table widefat fixed striped">
+                    <table class="wp-list-table widefat fixed striped" style="padding: 20px;">
                         <thead>
                             <tr>
                                 <th>تاریخ و زمان</th>

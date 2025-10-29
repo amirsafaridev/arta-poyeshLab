@@ -92,9 +92,20 @@
                     <div class="flex items-center space-x-2 sm:space-x-4 space-x-reverse">
                         
                         <div class="hidden sm:flex items-center space-x-3 space-x-reverse">
-                            <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                                <i class="fas fa-user text-blue-600"></i>
-                            </div>
+                            <?php 
+                            $current_profile_picture = get_user_meta($current_user->ID, 'apl_profile_picture', true);
+                            if (!empty($current_profile_picture)): 
+                            ?>
+                                <div class="w-8 h-8 rounded-full overflow-hidden">
+                                    <img src="<?php echo esc_url($current_profile_picture); ?>" 
+                                         alt="عکس پروفایل" 
+                                         class="w-full h-full object-cover">
+                                </div>
+                            <?php else: ?>
+                                <div class="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center">
+                                    <i class="fas fa-user text-gray-400 text-sm"></i>
+                                </div>
+                            <?php endif; ?>
                             <span class="text-gray-700 font-medium text-sm"><?php echo esc_html($user_display_name); ?></span>
                         </div>
                         <button onclick="logout()" class="hidden sm:block text-gray-400 hover:text-gray-600 p-1 sm:p-2">
@@ -133,17 +144,28 @@
             </div>
             
             <!-- User Profile Section -->
-            <div class="p-4 border-b border-gray-200">
+            <!-- <div class="p-4 border-b border-gray-200">
                 <div class="flex items-center space-x-3 space-x-reverse">
-                    <div class="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                        <i class="fas fa-user text-blue-600 text-lg"></i>
-                    </div>
+                    <?php 
+                    $current_profile_picture = get_user_meta($current_user->ID, 'apl_profile_picture', true);
+                    if (!empty($current_profile_picture)): 
+                    ?>
+                        <div class="w-12 h-12 rounded-full overflow-hidden">
+                            <img src="<?php echo esc_url($current_profile_picture); ?>" 
+                                 alt="عکس پروفایل" 
+                                 class="w-full h-full object-cover">
+                        </div>
+                    <?php else: ?>
+                        <div class="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center">
+                            <i class="fas fa-user text-gray-400 text-2xl"></i>
+                        </div>
+                    <?php endif; ?>
                     <div>
                         <p class="font-medium text-gray-900"><?php echo esc_html($user_display_name); ?></p>
                         <p class="text-sm text-gray-600"><?php echo esc_html($user_role_display); ?></p>
                     </div>
                 </div>
-            </div>
+            </div> -->
             
             <!-- Navigation Menu -->
             <nav class="p-4 space-y-2">
@@ -375,7 +397,7 @@
                                         <label class="block text-base font-medium text-gray-900 mb-4">نحوه ارائه خدمات</label>
                                         <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                                             <div class="relative">
-                                                <input type="radio" id="homeService" name="deliveryMethod" value="home" class="peer hidden">
+                                                <input type="radio" id="homeService" name="deliveryMethod" value="home_sampling" class="peer hidden">
                                                 <label for="homeService" class="block p-4 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 peer-checked:border-blue-600 peer-checked:bg-blue-50">
                                                     <div class="flex items-center">
                                                         <div class="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center ml-3">
@@ -390,7 +412,7 @@
                                             </div>
 
                                             <div class="relative">
-                                                <input type="radio" id="labService" name="deliveryMethod" value="lab" class="peer hidden">
+                                                <input type="radio" id="labService" name="deliveryMethod" value="lab_visit" class="peer hidden">
                                                 <label for="labService" class="block p-4 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 peer-checked:border-blue-600 peer-checked:bg-blue-50">
                                                     <div class="flex items-center">
                                                         <div class="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center ml-3">
@@ -405,7 +427,7 @@
                                             </div>
 
                                             <div class="relative">
-                                                <input type="radio" id="sampleDelivery" name="deliveryMethod" value="sample" class="peer hidden">
+                                                <input type="radio" id="sampleDelivery" name="deliveryMethod" value="sample_shipping" class="peer hidden">
                                                 <label for="sampleDelivery" class="block p-4 bg-white border-2 border-gray-200 rounded-xl cursor-pointer hover:border-blue-500 peer-checked:border-blue-600 peer-checked:bg-blue-50">
                                                     <div class="flex items-center">
                                                         <div class="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center ml-3">
@@ -423,7 +445,7 @@
 
                                     <!-- Navigation Buttons -->
                                     <div class="flex justify-end pt-6">
-                                        <button type="button" onclick="goToStep(2)" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                                        <button type="button" onclick="validateStep1()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
                                             مرحله بعد
                                             <i class="fas fa-arrow-left mr-2"></i>
                                         </button>
@@ -499,27 +521,33 @@
                                             <div>
                                                 <label class="block text-base font-medium text-gray-900 mb-4">بسته‌های آزمایش</label>
                                                 <div class="space-y-4">
-                                                    <!-- Package Card 1 - پکیج چکاپ خانم بالغ -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('adult-female')">
+
+                                                <?php foreach (apl_get_lab_package_products() as $package) : ?>
+                                                    <!-- Package Card -->
+                                                    <div id="package-<?= $package->id ?>" data-package-name="<?= $package->title ?>" data-package-price="<?= $package->prices['regular']['raw'] ?>"  data-package-service-delivery="<?= $package->service_delivery['value'] ?>" class="package-card  bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('<?= $package->id ?>')" style="display: none;">
                                                         <div class="flex flex-col sm:flex-row gap-4">
                                                             <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-pink-100 to-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-female text-pink-600 text-3xl"></i>
+                                                                <?php if ($package->thumbnail_url) : ?>
+                                                                <img src="<?= $package->thumbnail_url ?>" alt="<?= $package->title ?>" class="w-full h-full object-cover rounded-lg">
+                                                                <?php else : ?>
+                                                                    <i class="fas fa-female text-pink-600 text-3xl"></i>
+                                                                <?php endif; ?>
                                                             </div>
                                                             <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج چکاپ خانم بالغ</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های کامل خون، ادرار، هورمون‌ها و تست‌های تخصصی زنان</p>
+                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2"><?= $package->title ?></h3>
+                                                                <p class="text-sm text-gray-600 mb-3"><?= $package->short_description ?></p>
                                                                 <div class="mb-4">
                                                                     <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
+                                                                        <strong>آزمایش‌ها شامل:</strong>
                                                                     </div>
                                                                     <div class="text-xs text-gray-600">
-                                                                        CBC • FBS • Lipid Profile • TSH, T3, T4 • FSH, LH, Estradiol • Pap Smear • Mammography
+                                                                        <?= implode(' , ', array_column($package->package_items, 'title')) ?>
                                                                     </div>
                                                                 </div>
                                                         <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۲,۵۰۰,۰۰۰ تومان</span>
+                                                                    <span class="text-lg font-bold text-blue-600"><?= $package->prices['regular']['formatted'] ?></span>
                                                                     <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('adult-female')">
+                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('<?= $package->id ?>')">
                                                                             <span class="select-text">انتخاب</span>
                                                                             <span class="deselect-text hidden">لغو انتخاب</span>
                                                             </button>
@@ -532,269 +560,8 @@
                                                         </div>
                                                     </div>
 
-                                                    <!-- Package Card 2 - پکیج چکاپ آقای بالغ -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('adult-male')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-male text-blue-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج چکاپ آقای بالغ</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های کامل خون، ادرار، هورمون‌ها و تست‌های تخصصی مردان</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS • Lipid Profile • PSA • Testosterone • Liver Function Tests • Kidney Function Tests • ECG
-                                                                    </div>
-                                                                </div>
-                                                        <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۲,۳۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('adult-male')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                            </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
+                                                <?php endforeach; ?>
 
-                                                    <!-- Package Card 3 - پکیج چکاپ کودک -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('child')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-yellow-100 to-orange-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-child text-orange-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج چکاپ کودک</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های مناسب برای کودکان و نوجوانان</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS • Iron, Ferritin • Vitamin D • Calcium, Phosphorus • Growth Hormone • Urine Analysis • Stool Analysis
-                                                                    </div>
-                                                                </div>
-                                                        <div class="flex items-center justify-between">
-                                                            <span class="text-lg font-bold text-blue-600">۱,۸۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('child')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                            </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 4 - پکیج چکاپ مرد مسن -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('elderly-male')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-gray-100 to-slate-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-user-tie text-gray-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج چکاپ مرد مسن</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های تخصصی برای مردان بالای ۵۰ سال</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS, HbA1c • Lipid Profile • PSA • CEA • Liver Function Tests • Kidney Function Tests • Bone Density • ECG, Echo
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۳,۲۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('elderly-male')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 5 - پکیج چکاپ زن مسن -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('elderly-female')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-purple-100 to-pink-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-user-friends text-purple-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج چکاپ زن مسن</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های تخصصی برای زنان بالای ۵۰ سال</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS, HbA1c • Lipid Profile • CA 125 • CA 15-3 • CEA • Bone Density • Mammography • Pap Smear
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۳,۵۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('elderly-female')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 6 - پکیج طب کار ۱ -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('work-medical-1')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-green-100 to-emerald-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-hard-hat text-green-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج طب کار ۱</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های پایه برای طب کار و معاینات شغلی</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS • Urine Analysis • Stool Analysis • Chest X-ray • Vision Test • Hearing Test • Blood Pressure
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۱,۲۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('work-medical-1')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 7 - پکیج طب کار ۲ -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('work-medical-2')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-teal-100 to-cyan-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-user-md text-teal-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">پکیج طب کار ۲</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل آزمایش‌های پیشرفته برای طب کار و معاینات تخصصی</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>آزمایش‌های شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        CBC • FBS • Lipid Profile • Liver Function Tests • Kidney Function Tests • ECG • Spirometry • Chest X-ray • Vision & Hearing Tests • Drug Screening
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۲,۰۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('work-medical-2')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 8 - نمونه پاتولوژی -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('pathology-sample')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-red-100 to-rose-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-microscope text-red-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">نمونه پاتولوژی</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل نمونه‌گیری و بررسی بافت‌های مختلف بدن</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>خدمات شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        نمونه‌گیری از بافت‌های مشکوک • بیوپسی پوست و مخاط • نمونه‌گیری از توده‌ها • بررسی سلول‌های غیرطبیعی • تشخیص سرطان و ضایعات • نمونه‌گیری از غدد لنفاوی • بررسی ضایعات التهابی • نمونه‌گیری از اندام‌های داخلی
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۱,۵۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('pathology-sample')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-
-                                                    <!-- Package Card 9 - مشاوره جواب پاتولوژی -->
-                                                    <div class="package-card bg-white border border-gray-200 rounded-xl p-4 cursor-pointer transition-all duration-200 hover:shadow-md" onclick="togglePackage('pathology-consultation')">
-                                                        <div class="flex flex-col sm:flex-row gap-4">
-                                                            <div class="w-full sm:w-32 h-32 bg-gradient-to-br from-indigo-100 to-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                                                                <i class="fas fa-user-md text-indigo-600 text-3xl"></i>
-                                                            </div>
-                                                            <div class="flex-1">
-                                                                <h3 class="text-lg font-semibold text-gray-900 mb-2">مشاوره جواب پاتولوژی</h3>
-                                                                <p class="text-sm text-gray-600 mb-3">شامل تفسیر و مشاوره تخصصی نتایج پاتولوژی</p>
-                                                                <div class="mb-4">
-                                                                    <div class="text-xs text-gray-500 mb-2">
-                                                                        <strong>خدمات شامل:</strong>
-                                                                    </div>
-                                                                    <div class="text-xs text-gray-600">
-                                                                        تفسیر جواب‌های پاتولوژی • مشاوره تخصصی پاتولوژیست • توضیح نتایج آزمایش‌ها • راهنمایی برای مراحل بعدی • مشاوره درمانی • بررسی پیشرفت بیماری • پاسخ به سوالات پزشکی • ارائه گزارش جامع
-                                                                    </div>
-                                                                </div>
-                                                                <div class="flex items-center justify-between">
-                                                                    <span class="text-lg font-bold text-blue-600">۸۰۰,۰۰۰ تومان</span>
-                                                                    <div class="flex items-center gap-3">
-                                                                        <button type="button" class="package-select-btn bg-blue-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-blue-700 transition duration-200" onclick="event.stopPropagation(); togglePackage('pathology-consultation')">
-                                                                            <span class="select-text">انتخاب</span>
-                                                                            <span class="deselect-text hidden">لغو انتخاب</span>
-                                                                        </button>
-                                                                        <div class="package-selected hidden">
-                                                                            <i class="fas fa-check-circle text-green-600 text-xl"></i>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 </div>
                                             </div>
 
@@ -814,7 +581,7 @@
                                             <i class="fas fa-arrow-right ml-2"></i>
                                             مرحله قبل
                                         </button>
-                                        <button type="button" onclick="goToStep(3)" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                                        <button type="button" onclick="validateStep2()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
                                             مرحله بعد
                                             <i class="fas fa-arrow-left mr-2"></i>
                                         </button>
