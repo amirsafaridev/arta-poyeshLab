@@ -79,6 +79,7 @@ class APL_Admin_Settings {
         register_setting('apl_login_settings', 'apl_login_title');
         register_setting('apl_login_settings', 'apl_login_subtitle');
         register_setting('apl_login_settings', 'apl_login_terms_text');
+        register_setting('apl_login_settings', 'apl_order_success_message');
     }
     
     /**
@@ -227,6 +228,13 @@ class APL_Admin_Settings {
                         <td>
                             <textarea name="apl_login_terms_text" rows="3" class="large-text"><?php echo esc_textarea(get_option('apl_login_terms_text', 'با قوانین و مقررات و سیاست حفظ حریم خصوصی موافقم')); ?></textarea>
                             <p class="description">متن نمایش داده شده برای قوانین و مقررات</p>
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row">پیام موفقیت ثبت سفارش</th>
+                        <td>
+                            <textarea name="apl_order_success_message" rows="4" class="large-text"><?php echo esc_textarea(get_option('apl_order_success_message', 'سفارش شما با موفقیت ثبت شد و در انتظار بررسی قرار گرفت. شماره سفارش شما: {order_number}')); ?></textarea>
+                            <p class="description">متن نمایش داده شده در پاپ‌آپ موفقیت ثبت سفارش. می‌توانید از {order_number} برای شماره سفارش استفاده کنید.</p>
                         </td>
                     </tr>
                 </table>

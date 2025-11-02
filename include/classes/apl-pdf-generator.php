@@ -144,6 +144,17 @@ class APL_PDF_Generator {
             );
         }
         
+        // Get insurance fee if exists
+        $insurance_fee = 0;
+        foreach ($order->get_fees() as $fee_id => $fee) {
+            if ($fee->get_name() === 'حق بیمه') {
+                // Fee amount is stored as negative, so we take absolute value
+                $insurance_fee = abs($fee->get_total());
+                break;
+            }
+        }
+        $order_data['insurance_fee'] = $insurance_fee;
+        
         // Output PDF content
         $this->output_pdf($order_data);
     }
@@ -512,7 +523,18 @@ class APL_PDF_Generator {
         $html .= '</tbody>
             </table>
             
-            <div class="total-section">
+            <div class="total-section">';
+        
+        // Display insurance fee if exists
+        if (isset($order_data['insurance_fee']) && $order_data['insurance_fee'] > 0) {
+            $html .= '
+                <div class="total-row">
+                    <span>حق بیمه:</span>
+                    <span>' . $this->format_price($order_data['insurance_fee']) . ' ' . $order_data['currency_symbol'] . '</span>
+                </div>';
+        }
+        
+        $html .= '
                 <div class="total-row final">
                     <span>مبلغ کل:</span>
                     <span>' . $this->format_price($order_data['total']) . ' ' . $order_data['currency_symbol'] . '</span>

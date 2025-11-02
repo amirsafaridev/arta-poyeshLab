@@ -57,7 +57,9 @@ class APL_Main {
             'apl-product-fields.php',
             'apl-my-account.php',
             'apl-pdf-generator.php',
-            'apl-appointments.php'
+            'apl-appointments.php',
+            'apl-order-meta.php',
+            'apl-lab-test-results.php'
         );
         
         foreach ($classes_order as $class_file) {
@@ -67,7 +69,7 @@ class APL_Main {
             }
         }
     }
-    public function load_assets() {
+    public function load_assets($hook = '') {
         \wp_enqueue_style('apl-style', ARTA_POYESHLAB_PLUGIN_URL . 'assets/css/style.css');
         \wp_enqueue_script('apl-script', ARTA_POYESHLAB_PLUGIN_URL . 'assets/js/script.js', array('jquery'), '1.0.0', true);
         
@@ -79,6 +81,45 @@ class APL_Main {
             'profile_nonce' => \wp_create_nonce('apl_profile_nonce'),
             'dashboard_nonce' => \wp_create_nonce('apl_dashboard_nonce')
         ));
+        
+        // Enqueue admin insurance button script for WooCommerce admin pages
+        if (is_admin()) {
+            $this->enqueue_admin_insurance_script($hook);
+        }
+    }
+    
+    /**
+     * Enqueue admin insurance button script for WooCommerce order pages
+     */
+    private function enqueue_admin_insurance_script($hook) {
+        $screen = \get_current_screen();
+        $is_order_page = false;
+        
+        // Check for WooCommerce order pages (classic and HPOS)
+        if (($hook === 'post.php' || $hook === 'post-new.php') && isset($screen) && $screen->post_type === 'shop_order') {
+            $is_order_page = true;
+        } elseif (function_exists('wc_get_page_screen_id') && isset($screen) && $screen->id === \wc_get_page_screen_id('shop_order')) {
+            $is_order_page = true;
+        } elseif (isset($screen) && (strpos($screen->id, 'woocommerce_page_wc-orders') !== false || strpos($hook, 'woocommerce') !== false)) {
+            $is_order_page = true;
+        }
+        
+        if ($is_order_page) {
+            // Enqueue the insurance button script with jQuery dependency
+            \wp_enqueue_script(
+                'apl-admin-insurance-button',
+                ARTA_POYESHLAB_PLUGIN_URL . 'assets/js/admin-insurance-button.js',
+                array('jquery'),
+                ARTA_POYESHLAB_VERSION,
+                true
+            );
+            
+            // Localize script for AJAX
+            \wp_localize_script('apl-admin-insurance-button', 'apl_ajax', array(
+                'ajaxurl' => \admin_url('admin-ajax.php'),
+                'dashboard_nonce' => \wp_create_nonce('apl_dashboard_nonce')
+            ));
+        }
     }
 }
 new APL_Main();

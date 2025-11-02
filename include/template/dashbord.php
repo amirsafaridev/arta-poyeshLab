@@ -1,6 +1,26 @@
 
+<!-- Success Modal for Order Submission -->
+<div id="orderSuccessModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+    <div class="modal-mobile bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl">
+        <div class="text-center mb-4 sm:mb-6">
+            <div class="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <i class="fas fa-check text-green-600 text-xl sm:text-2xl"></i>
+            </div>
+            <h2 class="text-xl sm:text-2xl font-bold text-gray-800">ثبت سفارش موفق</h2>
+            <p class="text-gray-600 mt-2 text-sm sm:text-base" id="orderSuccessMessage">سفارش شما با موفقیت ثبت شد</p>
+        </div>
+        
+        <div class="flex justify-center">
+            <button onclick="reloadPage()" class="w-full bg-blue-600 text-white py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                <i class="fas fa-redo ml-2"></i>
+                بارگذاری مجدد صفحه
+            </button>
+        </div>
+    </div>
+</div>
+
  <!-- Success Modal -->
- <div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
+<div id="successModal" class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center hidden">
         <div class="modal-mobile bg-white rounded-2xl p-6 sm:p-8 max-w-md w-full mx-4 shadow-2xl">
             <div class="text-center mb-4 sm:mb-6">
                 <div class="w-12 h-12 sm:w-16 sm:h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3 sm:mb-4">
@@ -72,7 +92,31 @@
         $logo_id = get_option('apl_login_logo');
         $logo_url = $logo_id ? wp_get_attachment_url($logo_id) : '';
         $login_title = get_option('apl_login_title', 'آزمایشگاه پوش');
+        
+        // Get user mobile number for step 3
+        $user_mobile = get_user_meta($current_user->ID, 'apl_mobile_number', true);
+        // Get user first name and last name
+        $user_first_name = get_user_meta($current_user->ID, 'first_name', true);
+        $user_last_name = get_user_meta($current_user->ID, 'last_name', true);
+        // Get user national ID
+        $user_national_id = get_user_meta($current_user->ID, 'apl_national_id', true);
+        // If not in meta, try from user object
+        if (empty($user_first_name)) {
+            $user_first_name = $current_user->first_name;
+        }
+        if (empty($user_last_name)) {
+            $user_last_name = $current_user->last_name;
+        }
         ?>
+        
+        <script>
+            // Pass user data to JavaScript
+            window.userMobileNumber = '<?php echo esc_js($user_mobile); ?>';
+            window.userFirstName = '<?php echo esc_js($user_first_name); ?>';
+            window.userLastName = '<?php echo esc_js($user_last_name); ?>';
+            window.userNationalId = '<?php echo esc_js($user_national_id); ?>';
+            window.orderSuccessMessage = '<?php echo esc_js(get_option('apl_order_success_message', 'سفارش شما با موفقیت ثبت شد و در انتظار بررسی قرار گرفت. شماره سفارش شما: {order_number}')); ?>';
+        </script>
         
         <header class="dashboard-header bg-white shadow-sm border-b border-gray-200">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -327,7 +371,7 @@
                         </div>
 
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                            <form class="form-tablet space-y-4 sm:space-y-6">
+                            <form id="serviceRequestForm" class="form-tablet space-y-4 sm:space-y-6">
                                 <!-- Step 1: Service Type Selection -->
                                 <div class="space-y-6" id="step1">
                                     <!-- Progress Steps -->
@@ -504,7 +548,7 @@
                                                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                     <div>
                                                         <label class="block text-sm font-medium text-gray-700 mb-2">کد ملی بیمار</label>
-                                                        <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد ملی ۱۰ رقمی" maxlength="10" dir="ltr">
+                                                        <input type="text" id="step2NationalId" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد ملی ۱۰ رقمی" maxlength="10" dir="ltr">
                                                     </div>
                                                     <div>
                                                         <label class="block text-sm font-medium text-gray-700 mb-2">نام پزشک</label>
@@ -614,19 +658,19 @@
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-2">نام</label>
-                                                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="نام بیمار را وارد کنید">
+                                                    <input type="text" id="patientFirstName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="نام بیمار را وارد کنید">
                                                 </div>
                                                 <div>
                                                     <label class="block text-sm font-medium text-gray-700 mb-2">نام خانوادگی</label>
-                                                    <input type="text" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="نام خانوادگی بیمار را وارد کنید">
+                                                    <input type="text" id="patientLastName" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="نام خانوادگی بیمار را وارد کنید">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">کد ملی</label>
-                                                    <input type="text" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد ملی ۱۰ رقمی" maxlength="10" dir="ltr">
+                                                    <input type="text" id="patientNationalId" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد ملی ۱۰ رقمی" maxlength="10" dir="ltr">
                                         </div>
                                         <div>
                                             <label class="block text-sm font-medium text-gray-700 mb-2">شماره موبایل</label>
-                                                    <input type="tel" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="09123456789" dir="ltr">
+                                                    <input type="tel" id="patientMobile" inputmode="numeric" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="09123456789" dir="ltr">
                                         </div>
                                     </div>
                                 </div>
@@ -659,31 +703,22 @@
                                             </div>
                                         </div>
 
-                                        <!-- Lab Visit Schedule (shown only for lab visit) -->
+                                        <!-- Appointment Schedule (shown for all delivery methods) -->
                                         <div id="labScheduleSection" class="hidden">
-                                            <label class="block text-base font-medium text-gray-900 mb-4">زمان مراجعه به آزمایشگاه</label>
+                                            <label class="block text-base font-medium text-gray-900 mb-4">زمان مراجعه / نمونه‌گیری</label>
                                             
                                             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <!-- Date Selection -->
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-700 mb-2">تاریخ مراجعه</label>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">تاریخ</label>
                                                     <input type="text" id="labDatePicker" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="تاریخ را انتخاب کنید" readonly>
                                                 </div>
 
                                                 <!-- Time Selection -->
                                                 <div>
-                                                    <label class="block text-sm font-medium text-gray-700 mb-2">ساعت مراجعه</label>
-                                                    <select id="labTimeSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                                        <option value="">ساعت مورد نظر را انتخاب کنید</option>
-                                                        <option value="08:00">۸:۰۰ - ۹:۰۰ صبح</option>
-                                                        <option value="09:00">۹:۰۰ - ۱۰:۰۰ صبح</option>
-                                                        <option value="10:00">۱۰:۰۰ - ۱۱:۰۰ صبح</option>
-                                                        <option value="11:00">۱۱:۰۰ - ۱۲:۰۰ ظهر</option>
-                                                        <option value="12:00">۱۲:۰۰ - ۱۳:۰۰ ظهر</option>
-                                                        <option value="14:00">۱۴:۰۰ - ۱۵:۰۰ بعدازظهر</option>
-                                                        <option value="15:00">۱۵:۰۰ - ۱۶:۰۰ بعدازظهر</option>
-                                                        <option value="16:00">۱۶:۰۰ - ۱۷:۰۰ بعدازظهر</option>
-                                                        <option value="17:00">۱۷:۰۰ - ۱۸:۰۰ بعدازظهر</option>
+                                                    <label class="block text-sm font-medium text-gray-700 mb-2">ساعت</label>
+                                                    <select id="labTimeSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" disabled>
+                                                        <option value="">ابتدا تاریخ را انتخاب کنید</option>
                                                     </select>
                                                 </div>
                                             </div>
@@ -742,7 +777,7 @@
                                                 <i class="fas fa-arrow-right ml-2"></i>
                                                 مرحله قبل
                                             </button>
-                                            <button type="button" onclick="goToStep(4)" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                                            <button type="button" onclick="validateStep3()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
                                                 مرحله بعد
                                                 <i class="fas fa-arrow-left mr-2"></i>
                                             </button>
@@ -775,7 +810,7 @@
                                     <div>
                                             <label class="block text-base font-medium text-gray-900 mb-4">بیمه پایه</label>
                                         <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                                <option value="">بیمه پایه خود را انتخاب کنید</option>
+                                                <option value="">بیمه ندارم</option>
                                                 <option value="tamin">تأمین اجتماعی</option>
                                                 <option value="salamat">سلامت ایران</option>
                                                 <option value="mosalah">نیروهای مسلح</option>
@@ -787,7 +822,7 @@
                                 <div>
                                             <label class="block text-base font-medium text-gray-900 mb-4">بیمه تکمیلی</label>
                                     <select class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                                                <option value="">بیمه تکمیلی خود را انتخاب کنید</option>
+                                                <option value="">بیمه تکمیلی ندارم</option>
                                                 <option value="day">بیمه دی</option>
                                                 <option value="alborz">بیمه البرز</option>
                                                 <option value="hafez">بیمه حافظ</option>
@@ -887,9 +922,30 @@
                                                                     <p class="text-sm text-gray-600">شماره موبایل</p>
                                                                     <p class="font-medium text-gray-900" id="summaryMobile">۰۹۱۲۳۴۵۶۷۸۹</p>
                                                                 </div>
-                                                                <div>
+                                                                <div id="summaryAddressContainer" class="md:col-span-2">
                                                                     <p class="text-sm text-gray-600">آدرس</p>
                                                                     <p class="font-medium text-gray-900" id="summaryAddress">تهران، خیابان ولیعصر، پلاک ۱۲۳</p>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Appointment Information -->
+                                                    <div>
+                                                        <h4 class="text-sm font-semibold text-gray-900 mb-3">اطلاعات نوبت</h4>
+                                                        <div class="bg-white rounded-lg p-4">
+                                                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                                <div>
+                                                                    <p class="text-sm text-gray-600">نحوه ارائه خدمات</p>
+                                                                    <p class="font-medium text-gray-900" id="summaryDeliveryMethodDetail">نمونه‌گیری در منزل</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p class="text-sm text-gray-600">تاریخ</p>
+                                                                    <p class="font-medium text-gray-900" id="summaryAppointmentDate">-</p>
+                                                                </div>
+                                                                <div>
+                                                                    <p class="text-sm text-gray-600">ساعت</p>
+                                                                    <p class="font-medium text-gray-900" id="summaryAppointmentTime">-</p>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -925,42 +981,6 @@
                                                             </div>
                                                         </div>
                                                     </div>
-
-                                                    <!-- Cost Breakdown -->
-                                                    <div>
-                                                        <h4 class="text-sm font-semibold text-gray-900 mb-3">جزئیات هزینه</h4>
-                                                        <div class="bg-white rounded-lg p-4">
-                                                            <div class="space-y-3">
-                                                                <!-- Selected Package Summary (shown only if packages were selected) -->
-                                                                <div id="packageSummary" class="hidden">
-                                                                    <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                                                                        <div>
-                                                                            <p class="font-medium text-gray-900">بسته‌های آزمایش</p>
-                                                                        </div>
-                                                                        <span class="font-semibold text-gray-900" id="packageTotal">۰ تومان</span>
-                                                                    </div>
-                                                                </div>
-
-                                                                <!-- Service Fee -->
-                                                                <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                                                                    <span class="text-gray-600">هزینه خدمات</span>
-                                                                    <span class="text-gray-900">۵۰,۰۰۰ تومان</span>
-                                                                </div>
-
-                                                                <!-- Insurance Discount -->
-                                                                <div class="flex justify-between items-center py-2 border-b border-gray-200">
-                                                                    <span class="text-gray-600">تخفیف بیمه</span>
-                                                                    <span class="text-green-600">-۲۰۰,۰۰۰ تومان</span>
-                                                                </div>
-
-                                                                <!-- Total Amount -->
-                                                                <div class="flex justify-between items-center py-2 text-lg font-bold">
-                                                                    <span class="text-gray-900">مجموع قابل پرداخت</span>
-                                                                    <span class="text-blue-600" id="finalTotal">۱,۳۵۰,۰۰۰ تومان</span>
-                                                                </div>
-                                                            </div>
-                                                        </div>
-                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -969,22 +989,39 @@
                                         <div>
                                             <label class="block text-base font-medium text-gray-900 mb-4">کد تخفیف</label>
                                             <div class="flex space-x-3 space-x-reverse">
-                                                <input type="text" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد تخفیف خود را وارد کنید">
-                                                <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium whitespace-nowrap">
+                                                <input type="text" id="step5DiscountCode" class="flex-1 px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="کد تخفیف خود را وارد کنید">
+                                                <button type="button" onclick="applyStep5Discount()" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium whitespace-nowrap">
                                                     اعمال کد
-                                    </button>
+                                                </button>
                                             </div>
+                                            <input type="hidden" id="appliedDiscountCode" name="applied_discount_code" value="">
+                                            <div id="step5DiscountMessage" class="mt-3 text-sm hidden"></div>
                                         </div>
 
                                         <!-- Terms and Conditions -->
                                         <div>
                                             <label class="flex items-start">
-                                                <input type="checkbox" class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                                                <input type="checkbox" id="acceptTermsStep5" class="mt-1 h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
                                                 <span class="mr-2 text-sm text-gray-700">
                                                     با <a href="#" class="text-blue-600 hover:underline">قوانین و مقررات</a> و 
                                                     <a href="#" class="text-blue-600 hover:underline">سیاست حفظ حریم خصوصی</a> موافقم
                                                 </span>
                                             </label>
+                                        </div>
+
+                                        <!-- Error/Success Messages -->
+                                        <div id="step5MessageContainer" class="hidden">
+                                            <div id="step5ErrorMessage" class="bg-red-50 border border-red-200 rounded-lg p-4 hidden">
+                                                <div class="flex items-start">
+                                                    <div class="flex-shrink-0">
+                                                        <i class="fas fa-exclamation-circle text-red-600"></i>
+                                                    </div>
+                                                    <div class="mr-3">
+                                                        <h3 class="text-sm font-medium text-red-800">خطا</h3>
+                                                        <p class="mt-1 text-sm text-red-700" id="step5ErrorMessageText"></p>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
 
                                         <!-- Navigation Buttons -->
@@ -993,9 +1030,9 @@
                                                 <i class="fas fa-arrow-right ml-2"></i>
                                                 مرحله قبل
                                             </button>
-                                            <button type="submit" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
+                                            <button type="submit" id="finalSubmitBtn" class="bg-green-600 text-white px-8 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium">
                                                 <i class="fas fa-check ml-2"></i>
-                                                ثبت نهایی و پرداخت
+                                                ثبت نهایی 
                                             </button>
                                         </div>
 
@@ -1027,393 +1064,30 @@
                             <p class="text-gray-600">قرارهای آزمایشگاهی خود را پیگیری و مدیریت کنید.</p>
                         </div>
 
-                        <div class="space-y-4">
-                            <!-- Order Card 1 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center mb-2">
-                                            <h3 class="text-lg font-semibold text-gray-900 ml-3">آزمایش #25360</h3>
-                                            <span class="status-progress px-3 py-1 rounded-full text-xs font-medium">در حال انجام</span>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-calendar ml-2"></i>
-                                                <span>۲۴ آذر ۱۴۰۳ ساعت ۱۰:۰۰</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-home ml-2"></i>
-                                                <span>نمونه‌گیری در منزل</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-credit-card ml-2"></i>
-                                                <span>پرداخت شده - ۸۵۰,۰۰۰ تومان</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex space-x-2 space-x-reverse mt-4 lg:mt-0">
-                                        <button onclick="toggleOrderDetails('order1')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                                            <i class="fas fa-eye ml-1"></i>مشاهده
-                                        </button>
-                                    </div>
+                        <!-- Loading State -->
+                        <div id="ordersLoading" class="flex justify-center items-center py-12 hidden">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <span class="mr-3 text-gray-600">در حال بارگذاری...</span>
                                 </div>
                                 
-                                <!-- Expanded Details -->
-                                <div id="order1-details" class="hidden mt-6 pt-6 border-t border-gray-200">
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <!-- Order Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات سفارش</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره سفارش:</span>
-                                                    <span class="font-medium">ORD-1403-001</span>
+                        <!-- Empty State -->
+                        <div id="ordersEmpty" class="hidden text-center py-12">
+                            <div class="w-24 h-24 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <i class="fas fa-clipboard-list text-gray-400 text-3xl"></i>
                                                 </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ ثبت:</span>
-                                                    <span class="font-medium">۲۰ آذر ۱۴۰۳</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نوع درخواست:</span>
-                                                    <span class="font-medium">بسته‌های آزمایش</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">بسته انتخاب شده:</span>
-                                                    <span class="font-medium">پکیج چکاپ آقای بالغ</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نحوه ارائه:</span>
-                                                    <span class="font-medium">نمونه‌گیری در منزل</span>
-                                                </div>
+                            <h3 class="text-xl font-semibold text-gray-900 mb-2">هنوز هیچ سفارشی ندارید</h3>
+                            <p class="text-gray-600 mb-6">پس از ثبت سفارش، سفارشات شما در اینجا نمایش داده خواهد شد.</p>
+                            <button onclick="showSection('book')" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
+                                <i class="fas fa-plus ml-2"></i>رزرو آزمایش جدید
+                                        </button>
+                                </div>
+                                
+                        <!-- Orders Container -->
+                        <div id="ordersContainer" class="space-y-4 hidden">
+                            <!-- Dynamic order cards will be inserted here via JavaScript -->
                                             </div>
                                         </div>
                                         
-                                        <!-- Patient Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات بیمار</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نام و نام خانوادگی:</span>
-                                                    <span class="font-medium">علی احمدی</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">کد ملی:</span>
-                                                    <span class="font-medium">1234567890</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ تولد:</span>
-                                                    <span class="font-medium">۱۵/۰۳/۱۳۶۵</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره تماس:</span>
-                                                    <span class="font-medium">09123456789</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">آدرس:</span>
-                                                    <span class="font-medium">تهران، خیابان ولیعصر، پلاک ۱۲۳</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Tests Included -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">آزمایش‌های شامل</h4>
-                                        <div class="bg-gray-50 rounded-lg p-4">
-                                            <p class="text-sm text-gray-600 mb-2">CBC • FBS • Lipid Profile • PSA • Testosterone • Liver Function Tests • Kidney Function Tests • ECG</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Pricing Details -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">جزئیات قیمت</h4>
-                                        <div class="bg-blue-50 rounded-lg p-4">
-                                            <div class="space-y-2">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">قیمت بسته:</span>
-                                                    <span class="font-medium">۲,۳۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">هزینه نمونه‌گیری در منزل:</span>
-                                                    <span class="font-medium">۱۵۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تخفیف:</span>
-                                                    <span class="font-medium text-green-600">-۱,۶۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <hr class="my-2">
-                                                <div class="flex justify-between text-lg font-bold">
-                                                    <span>مجموع:</span>
-                                                    <span class="text-blue-600">۸۵۰,۰۰۰ تومان</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Order Card 2 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center mb-2">
-                                            <h3 class="text-lg font-semibold text-gray-900 ml-3">آزمایش #25361</h3>
-                                            <span class="status-completed px-3 py-1 rounded-full text-xs font-medium">تکمیل شده</span>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-calendar ml-2"></i>
-                                                <span>۱۹ آذر ۱۴۰۳ ساعت ۱۴:۰۰</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-building ml-2"></i>
-                                                <span>مراجعه به آزمایشگاه</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-credit-card ml-2"></i>
-                                                <span>پرداخت شده - ۱,۲۰۰,۰۰۰ تومان</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex space-x-2 space-x-reverse mt-4 lg:mt-0">
-                                        <button onclick="toggleOrderDetails('order2')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                                            <i class="fas fa-eye ml-1"></i>مشاهده
-                                        </button>
-                                        <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                                            <i class="fas fa-download ml-1"></i>نتایج
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Expanded Details -->
-                                <div id="order2-details" class="hidden mt-6 pt-6 border-t border-gray-200">
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <!-- Order Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات سفارش</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره سفارش:</span>
-                                                    <span class="font-medium">ORD-1403-002</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ ثبت:</span>
-                                                    <span class="font-medium">۱۵ آذر ۱۴۰۳</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نوع درخواست:</span>
-                                                    <span class="font-medium">بسته‌های آزمایش</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">بسته انتخاب شده:</span>
-                                                    <span class="font-medium">پکیج چکاپ آقای بالغ</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نحوه ارائه:</span>
-                                                    <span class="font-medium">مراجعه به آزمایشگاه</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Patient Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات بیمار</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نام و نام خانوادگی:</span>
-                                                    <span class="font-medium">علی احمدی</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">کد ملی:</span>
-                                                    <span class="font-medium">1234567890</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ تولد:</span>
-                                                    <span class="font-medium">۱۵/۰۳/۱۳۶۵</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره تماس:</span>
-                                                    <span class="font-medium">09123456789</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">آدرس:</span>
-                                                    <span class="font-medium">تهران، خیابان ولیعصر، پلاک ۱۲۳</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Tests Included -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">آزمایش‌های شامل</h4>
-                                        <div class="bg-gray-50 rounded-lg p-4">
-                                            <p class="text-sm text-gray-600 mb-2">CBC • FBS • Lipid Profile • PSA • Testosterone • Liver Function Tests • Kidney Function Tests • ECG</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Pricing Details -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">جزئیات قیمت</h4>
-                                        <div class="bg-blue-50 rounded-lg p-4">
-                                            <div class="space-y-2">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">قیمت بسته:</span>
-                                                    <span class="font-medium">۲,۳۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">هزینه مراجعه به آزمایشگاه:</span>
-                                                    <span class="font-medium">رایگان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تخفیف:</span>
-                                                    <span class="font-medium text-green-600">-۱,۱۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <hr class="my-2">
-                                                <div class="flex justify-between text-lg font-bold">
-                                                    <span>مجموع:</span>
-                                                    <span class="text-blue-600">۱,۲۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Order Card 3 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex-1">
-                                        <div class="flex items-center mb-2">
-                                            <h3 class="text-lg font-semibold text-gray-900 ml-3">آزمایش #25362</h3>
-                                            <span class="status-pending px-3 py-1 rounded-full text-xs font-medium">در انتظار پرداخت</span>
-                                        </div>
-                                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
-                                            <div class="flex items-center">
-                                                <i class="fas fa-calendar ml-2"></i>
-                                                <span>۲۷ آذر ۱۴۰۳ ساعت ۹:۰۰</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-home ml-2"></i>
-                                                <span>نمونه‌گیری در منزل</span>
-                                            </div>
-                                            <div class="flex items-center">
-                                                <i class="fas fa-exclamation-triangle ml-2 text-orange-500"></i>
-                                                <span>نیاز به پرداخت - ۹۵۰,۰۰۰ تومان</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="flex space-x-2 space-x-reverse mt-4 lg:mt-0">
-                                        <button onclick="toggleOrderDetails('order3')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
-                                            <i class="fas fa-eye ml-1"></i>مشاهده
-                                        </button>
-                                        <button class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
-                                            <i class="fas fa-credit-card ml-1"></i>پرداخت
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Expanded Details -->
-                                <div id="order3-details" class="hidden mt-6 pt-6 border-t border-gray-200">
-                                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                        <!-- Order Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات سفارش</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره سفارش:</span>
-                                                    <span class="font-medium">ORD-1403-003</span>
-                            </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ ثبت:</span>
-                                                    <span class="font-medium">۲۵ آذر ۱۴۰۳</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نوع درخواست:</span>
-                                                    <span class="font-medium">بسته‌های آزمایش</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">بسته انتخاب شده:</span>
-                                                    <span class="font-medium">پکیج چکاپ آقای بالغ</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نحوه ارائه:</span>
-                                                    <span class="font-medium">نمونه‌گیری در منزل</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        
-                                        <!-- Patient Information -->
-                                        <div>
-                                            <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات بیمار</h4>
-                                            <div class="space-y-3">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">نام و نام خانوادگی:</span>
-                                                    <span class="font-medium">علی احمدی</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">کد ملی:</span>
-                                                    <span class="font-medium">1234567890</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تاریخ تولد:</span>
-                                                    <span class="font-medium">۱۵/۰۳/۱۳۶۵</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">شماره تماس:</span>
-                                                    <span class="font-medium">09123456789</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">آدرس:</span>
-                                                    <span class="font-medium">تهران، خیابان ولیعصر، پلاک ۱۲۳</span>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Tests Included -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">آزمایش‌های شامل</h4>
-                                        <div class="bg-gray-50 rounded-lg p-4">
-                                            <p class="text-sm text-gray-600 mb-2">CBC • FBS • Lipid Profile • PSA • Testosterone • Liver Function Tests • Kidney Function Tests • ECG</p>
-                                        </div>
-                                    </div>
-                                    
-                                    <!-- Pricing Details -->
-                                    <div class="mt-6">
-                                        <h4 class="text-lg font-semibold text-gray-900 mb-4">جزئیات قیمت</h4>
-                                        <div class="bg-orange-50 rounded-lg p-4">
-                                            <div class="space-y-2">
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">قیمت بسته:</span>
-                                                    <span class="font-medium">۲,۳۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">هزینه نمونه‌گیری در منزل:</span>
-                                                    <span class="font-medium">۱۵۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="flex justify-between">
-                                                    <span class="text-gray-600">تخفیف:</span>
-                                                    <span class="font-medium text-green-600">-۱,۵۰۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <hr class="my-2">
-                                                <div class="flex justify-between text-lg font-bold">
-                                                    <span>مجموع:</span>
-                                                    <span class="text-orange-600">۹۵۰,۰۰۰ تومان</span>
-                                                </div>
-                                                <div class="mt-3 p-3 bg-orange-100 rounded-lg">
-                                                    <p class="text-orange-800 text-sm font-medium">
-                                                        <i class="fas fa-exclamation-triangle ml-2"></i>
-                                                        این سفارش در انتظار پرداخت است
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
                     <!-- Results Section -->
                     <div id="resultsSection" class="section hidden">
                         <div class="mb-8">

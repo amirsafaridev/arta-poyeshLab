@@ -70,11 +70,22 @@ function showSuccess(message) {
 
 // Persian to English number converter
 function convertPersianToEnglish(text) {
+    // Return empty string if input is null, undefined, or not a string/number
+    if (text === null || text === undefined) {
+        return '';
+    }
+    
+    // Convert to string if not already
+    let result = String(text);
+    
+    // Return empty string if result is empty after conversion
+    if (!result) {
+        return '';
+    }
+    
     const persianNumbers = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
     const arabicNumbers = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩'];
     const englishNumbers = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
-    
-    let result = text;
     
     // Convert Persian numbers
     for (let i = 0; i < persianNumbers.length; i++) {
@@ -765,6 +776,11 @@ function showSection(sectionName) {
     if (sectionName === 'invoices') {
         loadUserInvoices();
     }
+    
+    // Load orders when orders section is shown
+    if (sectionName === 'orders') {
+        loadUserOrders();
+    }
 }
 
 function updateNavigation(activeSection) {
@@ -856,7 +872,7 @@ let uploadedFiles = [];
 function initializeFileUpload() {
     const uploadArea = document.querySelector('.file-upload-mobile');
     const fileInput = document.getElementById('prescriptionFile');
-    const selectFileBtn = document.querySelector('.file-upload-mobile');
+    const selectFileBtn = uploadArea?.querySelector('button[type="button"]');
 
     // Check if elements exist before adding event listeners
     if (!uploadArea || !fileInput) {
@@ -864,22 +880,48 @@ function initializeFileUpload() {
         return;
     }
 
+    // Remove existing event listeners by cloning elements
+    const newUploadArea = uploadArea.cloneNode(true);
+    uploadArea.parentNode?.replaceChild(newUploadArea, uploadArea);
+    
+    const newFileInput = fileInput.cloneNode(true);
+    fileInput.parentNode?.replaceChild(newFileInput, fileInput);
+
+    // Get new references
+    const newUploadAreaRef = document.querySelector('.file-upload-mobile');
+    const newFileInputRef = document.getElementById('prescriptionFile');
+    const newSelectFileBtn = newUploadAreaRef?.querySelector('button[type="button"]');
+
     // Click handlers
-    uploadArea.addEventListener('click', () => fileInput.click());
-    if (selectFileBtn) {
-        selectFileBtn.addEventListener('click', (e) => {
+    if (newUploadAreaRef) {
+        newUploadAreaRef.addEventListener('click', (e) => {
+            // Don't trigger if clicking on the button
+            if (e.target.tagName === 'BUTTON') {
+                return;
+            }
+            newFileInputRef?.click();
+        });
+    }
+    
+    if (newSelectFileBtn && newFileInputRef) {
+        newSelectFileBtn.addEventListener('click', (e) => {
             e.stopPropagation();
-            fileInput.click();
+            e.preventDefault();
+            newFileInputRef.click();
         });
     }
 
     // File input change
-    fileInput.addEventListener('change', handleFileSelect);
+    if (newFileInputRef) {
+        newFileInputRef.addEventListener('change', handleFileSelect);
+    }
 
     // Drag and drop
-    uploadArea.addEventListener('dragover', handleDragOver);
-    uploadArea.addEventListener('drop', handleFileDrop);
-    uploadArea.addEventListener('dragleave', handleDragLeave);
+    if (newUploadAreaRef) {
+        newUploadAreaRef.addEventListener('dragover', handleDragOver);
+        newUploadAreaRef.addEventListener('drop', handleFileDrop);
+        newUploadAreaRef.addEventListener('dragleave', handleDragLeave);
+    }
 }
 
 function handleDragOver(e) {
@@ -934,6 +976,19 @@ function processFiles(files) {
 
 function createFilePreview(file) {
     const previewContainer = document.getElementById('uploadedFiles');
+    if (!previewContainer) {
+        console.error('uploadedFiles container not found');
+        return;
+    }
+    
+    // Find or create the space-y-3 container
+    let filesListContainer = previewContainer.querySelector('.space-y-3');
+    if (!filesListContainer) {
+        filesListContainer = document.createElement('div');
+        filesListContainer.className = 'space-y-3';
+        previewContainer.appendChild(filesListContainer);
+    }
+    
     const fileId = 'file_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
     
     const previewDiv = document.createElement('div');
@@ -1001,7 +1056,7 @@ function createFilePreview(file) {
     }
 
     previewDiv.innerHTML = previewContent;
-    previewContainer.appendChild(previewDiv);
+    filesListContainer.appendChild(previewDiv);
 }
 
 function removeFile(fileId, imageUrl = null) {
@@ -1025,12 +1080,24 @@ function removeFile(fileId, imageUrl = null) {
 
 function updateFilePreviewVisibility() {
     const previewArea = document.getElementById('uploadedFiles');
+    if (!previewArea) return;
     
     if (uploadedFiles.length > 0) {
         previewArea.classList.remove('hidden');
+        // Ensure space-y-3 container exists
+        let filesListContainer = previewArea.querySelector('.space-y-3');
+        if (!filesListContainer) {
+            filesListContainer = document.createElement('div');
+            filesListContainer.className = 'space-y-3';
+            previewArea.appendChild(filesListContainer);
+        }
     } else {
         previewArea.classList.add('hidden');
-        previewArea.innerHTML = '';
+        // Clear only the files list, keep the header
+        const filesListContainer = previewArea.querySelector('.space-y-3');
+        if (filesListContainer) {
+            filesListContainer.innerHTML = '';
+        }
     }
 }
 
@@ -1089,30 +1156,212 @@ function toggleDiscountSection() {
 }
 
 // Submit request
-function submitRequest() {
-    const acceptTerms = document.getElementById('acceptTerms').checked;
-    if (!acceptTerms) {
-        showError('acceptRegisterTerms', 'لطفاً قوانین و مقررات را مطالعه و تایید کنید.');
+function submitRequest(event) {
+    if (event) {
+        event.preventDefault();
+    }
+
+    const acceptTerms = document.getElementById('acceptTermsStep5');
+    if (!acceptTerms || !acceptTerms.checked) {
+        showStep5Error('لطفاً قوانین و مقررات را مطالعه و تایید کنید.');
         return;
     }
 
-    // Simulate request processing
-    const button = event.target;
+    const button = document.getElementById('finalSubmitBtn');
+    if (!button) return;
+
+    // Hide any previous error messages
+    hideStep5Error();
+
     const originalText = button.innerHTML;
     button.innerHTML = '<i class="fas fa-spinner fa-spin ml-2"></i>در حال ثبت درخواست...';
     button.disabled = true;
 
-    setTimeout(() => {
+    // Collect all form data
+    const formData = collectFormData();
+
+    // Check if ajaxurl is available
+    const ajaxUrl = typeof apl_ajax !== 'undefined' ? apl_ajax.ajaxurl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+
+    // Send AJAX request
+    fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Show success modal with message from settings
+            showOrderSuccessModal(data.data.order_number);
+        } else {
+            // Show error message in step 5
+            const errorMessage = data.data?.message || 'خطای ناشناخته در ثبت سفارش';
+            showStep5Error(errorMessage);
+            button.innerHTML = originalText;
+            button.disabled = false;
+        }
+    })
+    .catch(error => {
+        console.error('Error submitting order:', error);
+        showStep5Error('خطا در ارتباط با سرور. لطفاً دوباره تلاش کنید.');
         button.innerHTML = originalText;
         button.disabled = false;
+    });
+}
+
+// Show error message in step 5
+function showStep5Error(message) {
+    const messageContainer = document.getElementById('step5MessageContainer');
+    const errorMessage = document.getElementById('step5ErrorMessage');
+    const errorMessageText = document.getElementById('step5ErrorMessageText');
+    
+    if (messageContainer && errorMessage && errorMessageText) {
+        errorMessageText.textContent = message;
+        messageContainer.classList.remove('hidden');
+        errorMessage.classList.remove('hidden');
         
-        // Generate booking number
-        const bookingNumber = 'RES-1403-' + String(Math.floor(Math.random() * 1000)).padStart(3, '0');
-        document.getElementById('bookingNumber').textContent = bookingNumber;
+        // Scroll to error message
+        messageContainer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+}
+
+// Hide error message in step 5
+function hideStep5Error() {
+    const messageContainer = document.getElementById('step5MessageContainer');
+    const errorMessage = document.getElementById('step5ErrorMessage');
+    
+    if (messageContainer && errorMessage) {
+        messageContainer.classList.add('hidden');
+        errorMessage.classList.add('hidden');
+    }
+}
+
+// Show order success modal
+function showOrderSuccessModal(orderNumber) {
+    const modal = document.getElementById('orderSuccessModal');
+    const messageElement = document.getElementById('orderSuccessMessage');
+    
+    if (modal && messageElement) {
+        // Get message from settings and replace {order_number} placeholder
+        let message = typeof window.orderSuccessMessage !== 'undefined' 
+            ? window.orderSuccessMessage 
+            : 'سفارش شما با موفقیت ثبت شد و در انتظار بررسی قرار گرفت. شماره سفارش شما: {order_number}';
         
-        // Show success modal
-        document.getElementById('successModal').classList.remove('hidden');
-    }, 2000);
+        // Replace {order_number} with actual order number
+        message = message.replace('{order_number}', orderNumber);
+        
+        messageElement.textContent = message;
+        modal.classList.remove('hidden');
+    }
+}
+
+// Reload page
+function reloadPage() {
+    window.location.reload();
+}
+
+// Collect all form data from all steps
+function collectFormData() {
+    const formData = new FormData();
+    formData.append('action', 'apl_create_order');
+
+    // Step 1: Request type and delivery method
+    const requestType = document.querySelector('input[name="requestType"]:checked');
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
+    
+    if (requestType) {
+        formData.append('request_type', requestType.value);
+    }
+    if (deliveryMethod) {
+        formData.append('delivery_method', deliveryMethod.value);
+    }
+
+    // Step 2: Request type specific data
+    if (requestType && requestType.value === 'upload') {
+        // Uploaded files - collect file data
+        const prescriptionFile = document.getElementById('prescriptionFile');
+        if (prescriptionFile && prescriptionFile.files.length > 0) {
+            Array.from(prescriptionFile.files).forEach((file, index) => {
+                formData.append(`prescription_files_${index}`, file);
+            });
+        }
+    } else if (requestType && requestType.value === 'electronic') {
+        const step2NationalId = document.getElementById('step2NationalId');
+        const doctorName = document.querySelector('#step2 input[placeholder*="نام پزشک"]');
+        if (step2NationalId && step2NationalId.value) {
+            formData.append('electronic_national_id', step2NationalId.value);
+        }
+        if (doctorName && doctorName.value) {
+            formData.append('doctor_name', doctorName.value);
+        }
+    } else if (requestType && requestType.value === 'packages') {
+        // Selected packages
+        if (selectedPackages && selectedPackages.length > 0) {
+            selectedPackages.forEach((pkg, index) => {
+                formData.append(`packages[${index}][id]`, pkg.id);
+                formData.append(`packages[${index}][name]`, pkg.name);
+                formData.append(`packages[${index}][price]`, pkg.price.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/,/g, ''));
+            });
+        }
+    }
+
+    // Step 3: Patient information
+    const patientFirstName = document.getElementById('patientFirstName');
+    const patientLastName = document.getElementById('patientLastName');
+    const patientNationalId = document.getElementById('patientNationalId');
+    const patientMobile = document.getElementById('patientMobile');
+    const labDatePicker = document.getElementById('labDatePicker');
+    const labTimeSelect = document.getElementById('labTimeSelect');
+    const citySelect = document.getElementById('citySelect');
+    const addressTextarea = document.getElementById('addressTextarea');
+
+    if (patientFirstName && patientFirstName.value) {
+        formData.append('patient_first_name', patientFirstName.value);
+    }
+    if (patientLastName && patientLastName.value) {
+        formData.append('patient_last_name', patientLastName.value);
+    }
+    if (patientNationalId && patientNationalId.value) {
+        formData.append('patient_national_id', patientNationalId.value);
+    }
+    if (patientMobile && patientMobile.value) {
+        formData.append('patient_mobile', patientMobile.value);
+    }
+    if (labDatePicker && labDatePicker.value) {
+        formData.append('appointment_date', labDatePicker.value);
+    }
+    if (labTimeSelect && labTimeSelect.value) {
+        formData.append('appointment_time', labTimeSelect.value);
+    }
+    if (citySelect && citySelect.value) {
+        formData.append('city', citySelect.value);
+    }
+    if (addressTextarea && addressTextarea.value) {
+        formData.append('address', addressTextarea.value);
+    }
+
+    // Step 4: Insurance information
+    const basicInsuranceSelect = document.querySelector('#step4 select:first-of-type');
+    const supplementaryInsuranceSelect = document.querySelector('#step4 select:nth-of-type(2)');
+    const trackingCodeInput = document.querySelector('#step4 input[type="text"]');
+
+    if (basicInsuranceSelect && basicInsuranceSelect.value) {
+        formData.append('basic_insurance', basicInsuranceSelect.value);
+    }
+    if (supplementaryInsuranceSelect && supplementaryInsuranceSelect.value) {
+        formData.append('supplementary_insurance', supplementaryInsuranceSelect.value);
+    }
+    if (trackingCodeInput && trackingCodeInput.value) {
+        formData.append('insurance_tracking_code', trackingCodeInput.value);
+    }
+
+    // Step 5: Discount code
+    const appliedDiscountCode = document.getElementById('appliedDiscountCode');
+    if (appliedDiscountCode && appliedDiscountCode.value) {
+        formData.append('discount_code', appliedDiscountCode.value);
+    }
+
+    return formData;
 }
 
 // Close success modal and go to orders
@@ -1228,6 +1477,151 @@ function showDiscountMessage(message, type) {
         discountMessage.classList.add('text-red-600');
     } else {
         discountMessage.classList.add('text-green-600');
+    }
+    
+    discountMessage.textContent = message;
+}
+
+// Apply discount code in step 5
+function applyStep5Discount() {
+    const discountCodeInput = document.getElementById('step5DiscountCode');
+    const discountMessage = document.getElementById('step5DiscountMessage');
+    
+    if (!discountCodeInput || !discountMessage) {
+        console.error('Discount elements not found');
+        return;
+    }
+    
+    const discountCode = discountCodeInput.value.trim();
+    
+    if (!discountCode) {
+        showStep5DiscountMessage('لطفاً کد تخفیف را وارد کنید', 'error');
+        return;
+    }
+    
+    // Show loading state
+    showStep5DiscountMessage('در حال بررسی کد تخفیف...', 'info');
+    
+    // Check if ajaxurl is available
+    const ajaxUrl = typeof apl_ajax !== 'undefined' ? apl_ajax.ajaxurl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+    
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'apl_validate_discount_code');
+    formData.append('discount_code', discountCode);
+    
+    // Get current packages total for calculation
+    let packagesTotal = 0;
+    if (selectedPackages.length > 0) {
+        selectedPackages.forEach(pkg => {
+            const priceStr = pkg.price.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                                       .replace(/,/g, '');
+            packagesTotal += parseInt(priceStr) || 0;
+        });
+    }
+    formData.append('subtotal', packagesTotal);
+    
+    // Send AJAX request
+    fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            const discount = data.data;
+            let message = '';
+            
+            if (discount.type === 'percentage') {
+                // Percentage discount
+                message = `✓ کد تخفیف معتبر است: ${discount.value}% تخفیف`;
+                if (discount.amount) {
+                    message += ` (${discount.amount.toLocaleString('fa-IR')} تومان)`;
+                }
+            } else if (discount.type === 'fixed') {
+                // Fixed amount discount
+                message = `✓ کد تخفیف معتبر است: ${discount.amount.toLocaleString('fa-IR')} تومان تخفیف`;
+            } else {
+                message = `✓ کد تخفیف معتبر است: ${discount.description || discountCode}`;
+            }
+            
+            showStep5DiscountMessage(message, 'success');
+            
+            // Make discount code input readonly and store in hidden field
+            discountCodeInput.setAttribute('readonly', 'readonly');
+            discountCodeInput.classList.add('bg-gray-100', 'cursor-not-allowed');
+            discountCodeInput.classList.remove('focus:ring-2', 'focus:ring-blue-500', 'focus:border-transparent');
+            
+            // Store discount code in hidden field
+            const appliedDiscountCodeField = document.getElementById('appliedDiscountCode');
+            if (appliedDiscountCodeField) {
+                appliedDiscountCodeField.value = discountCode;
+            }
+            
+            // Store discount info for later use
+            window.appliedDiscount = {
+                code: discountCode,
+                type: discount.type,
+                value: discount.value,
+                amount: discount.amount,
+                description: discount.description
+            };
+        } else {
+            showStep5DiscountMessage(data.data?.message || 'کد تخفیف نامعتبر است', 'error');
+            window.appliedDiscount = null;
+            
+            // Clear hidden field if discount is invalid
+            const appliedDiscountCodeField = document.getElementById('appliedDiscountCode');
+            if (appliedDiscountCodeField) {
+                appliedDiscountCodeField.value = '';
+            }
+            
+            // Re-enable input for editing if invalid
+            discountCodeInput.removeAttribute('readonly');
+            discountCodeInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            discountCodeInput.classList.add('focus:ring-2', 'focus:ring-blue-500', 'focus:border-transparent');
+        }
+    })
+    .catch(error => {
+        console.error('Error validating discount code:', error);
+        showStep5DiscountMessage('خطا در بررسی کد تخفیف. لطفاً دوباره تلاش کنید.', 'error');
+        window.appliedDiscount = null;
+        
+        // Clear hidden field on error
+        const appliedDiscountCodeField = document.getElementById('appliedDiscountCode');
+        if (appliedDiscountCodeField) {
+            appliedDiscountCodeField.value = '';
+        }
+        
+        // Re-enable input for editing on error
+        const discountCodeInput = document.getElementById('step5DiscountCode');
+        if (discountCodeInput) {
+            discountCodeInput.removeAttribute('readonly');
+            discountCodeInput.classList.remove('bg-gray-100', 'cursor-not-allowed');
+            discountCodeInput.classList.add('focus:ring-2', 'focus:ring-blue-500', 'focus:border-transparent');
+        }
+    });
+}
+
+// Show discount message for step 5
+function showStep5DiscountMessage(message, type) {
+    const discountMessage = document.getElementById('step5DiscountMessage');
+    if (!discountMessage) return;
+    
+    discountMessage.classList.remove('hidden', 'text-red-600', 'text-green-600', 'text-blue-600', 'text-orange-600');
+    
+    switch (type) {
+        case 'error':
+            discountMessage.classList.add('text-red-600');
+            break;
+        case 'success':
+            discountMessage.classList.add('text-green-600');
+            break;
+        case 'info':
+            discountMessage.classList.add('text-blue-600');
+            break;
+        default:
+            discountMessage.classList.add('text-gray-600');
     }
     
     discountMessage.textContent = message;
@@ -1668,6 +2062,160 @@ function clearStep2Errors() {
     });
 }
 
+// Populate step 3 fields with user data and step 2 data
+function populateStep3Fields() {
+    // Populate first name from user account (if available)
+    const patientFirstName = document.getElementById('patientFirstName');
+    if (patientFirstName && window.userFirstName && !patientFirstName.value) {
+        patientFirstName.value = window.userFirstName;
+    }
+    
+    // Populate last name from user account (if available)
+    const patientLastName = document.getElementById('patientLastName');
+    if (patientLastName && window.userLastName && !patientLastName.value) {
+        patientLastName.value = window.userLastName;
+    }
+    
+    // Populate mobile from user account (if available)
+    const patientMobile = document.getElementById('patientMobile');
+    if (patientMobile && window.userMobileNumber && !patientMobile.value) {
+        patientMobile.value = window.userMobileNumber;
+    }
+    
+    // Populate national ID from user account (if available)
+    const patientNationalId = document.getElementById('patientNationalId');
+    if (patientNationalId && window.userNationalId && !patientNationalId.value) {
+        patientNationalId.value = window.userNationalId;
+    }
+    
+    // Populate national ID from step 2 if electronic prescription was selected and step 3 field is still empty
+    const requestType = document.querySelector('input[name="requestType"]:checked');
+    if (requestType && requestType.value === 'electronic') {
+        const step2NationalId = document.querySelector('#step2 input[placeholder*="کد ملی"]');
+        
+        if (step2NationalId && step2NationalId.value && patientNationalId && !patientNationalId.value) {
+            patientNationalId.value = step2NationalId.value;
+        }
+    }
+}
+
+// Validate step 3 - all fields are required
+function validateStep3() {
+    const patientFirstName = document.getElementById('patientFirstName');
+    const patientLastName = document.getElementById('patientLastName');
+    const patientNationalId = document.getElementById('patientNationalId');
+    const patientMobile = document.getElementById('patientMobile');
+    
+    // Get delivery method
+    const deliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
+    
+    // Date and time fields (required for all delivery methods)
+    const labDatePicker = document.getElementById('labDatePicker');
+    const labTimeSelect = document.getElementById('labTimeSelect');
+    
+    // City and address fields (required only for home_sampling)
+    const citySelect = document.getElementById('citySelect');
+    const addressTextarea = document.getElementById('addressTextarea');
+    
+    let isValid = true;
+    
+    // Clear previous error messages
+    clearStep3Errors();
+    
+    // Validate first name
+    if (!patientFirstName || !patientFirstName.value.trim()) {
+        showStep3Error('firstNameError', 'لطفاً نام بیمار را وارد کنید', patientFirstName);
+        isValid = false;
+    }
+    
+    // Validate last name
+    if (!patientLastName || !patientLastName.value.trim()) {
+        showStep3Error('lastNameError', 'لطفاً نام خانوادگی بیمار را وارد کنید', patientLastName);
+        isValid = false;
+    }
+    
+    // Validate national ID
+    if (!patientNationalId || !patientNationalId.value.trim()) {
+        showStep3Error('nationalIdError', 'لطفاً کد ملی بیمار را وارد کنید', patientNationalId);
+        isValid = false;
+    } else if (patientNationalId.value.trim().length !== 10) {
+        showStep3Error('nationalIdError', 'کد ملی باید ۱۰ رقم باشد', patientNationalId);
+        isValid = false;
+    }
+    
+    // Validate mobile
+    if (!patientMobile || !patientMobile.value.trim()) {
+        showStep3Error('mobileError', 'لطفاً شماره موبایل را وارد کنید', patientMobile);
+        isValid = false;
+    } else if (patientMobile.value.trim().length < 10) {
+        showStep3Error('mobileError', 'شماره موبایل معتبر نیست', patientMobile);
+        isValid = false;
+    }
+    
+    // Validate date (required for all delivery methods)
+    if (!labDatePicker || !labDatePicker.value.trim()) {
+        showStep3Error('dateError', 'لطفاً تاریخ را انتخاب کنید', labDatePicker);
+        isValid = false;
+    }
+    
+    // Validate time (required for all delivery methods)
+    if (!labTimeSelect || !labTimeSelect.value || labTimeSelect.value.trim() === '' || labTimeSelect.disabled) {
+        showStep3Error('timeError', 'لطفاً ساعت را انتخاب کنید', labTimeSelect);
+        isValid = false;
+    }
+    
+    // Validate city and address (required only for home_sampling)
+    if (deliveryMethod && deliveryMethod.value === 'home_sampling') {
+        if (!citySelect || !citySelect.value || citySelect.value.trim() === '') {
+            showStep3Error('cityError', 'لطفاً شهر را انتخاب کنید', citySelect);
+            isValid = false;
+        }
+        
+        if (!addressTextarea || !addressTextarea.value.trim()) {
+            showStep3Error('addressError', 'لطفاً آدرس کامل را وارد کنید', addressTextarea);
+            isValid = false;
+        }
+    }
+    
+    if (isValid) {
+        goToStep(4);
+    }
+    
+    return isValid;
+}
+
+// Show error message for step 3
+function showStep3Error(errorId, message, inputElement) {
+    // Remove existing error if any
+    const existingError = document.getElementById(errorId);
+    if (existingError) {
+        existingError.remove();
+    }
+    
+    // Create error message element
+    const errorDiv = document.createElement('div');
+    errorDiv.id = errorId;
+    errorDiv.className = 'text-red-600 text-sm mt-2 flex items-center';
+    errorDiv.innerHTML = `<i class="fas fa-exclamation-circle ml-2"></i>${message}`;
+    
+    // Add error message after the input field's parent div
+    if (inputElement) {
+        const inputParent = inputElement.closest('div');
+        if (inputParent) {
+            inputParent.appendChild(errorDiv);
+        }
+    }
+}
+
+// Clear step 3 error messages
+function clearStep3Errors() {
+    const errorIds = ['firstNameError', 'lastNameError', 'nationalIdError', 'mobileError', 'dateError', 'timeError', 'cityError', 'addressError'];
+    errorIds.forEach(errorId => {
+        const error = document.getElementById(errorId);
+        if (error) error.remove();
+    });
+}
+
 // Navigate between steps
 function goToStep(stepNumber) {
     // Hide all steps
@@ -1691,6 +2239,19 @@ function goToStep(stepNumber) {
     // Clear selected packages when going back to step 1
     if (stepNumber === 1) {
         clearSelectedPackages();
+    }
+
+    // Populate step 3 fields when going to step 3
+    if (stepNumber === 3) {
+        populateStep3Fields();
+        
+        // Load available hours if date is already selected (for all delivery methods)
+        const labDatePicker = document.getElementById('labDatePicker');
+        const deliveryMethodInput = document.querySelector('input[name="deliveryMethod"]:checked');
+        
+        if (labDatePicker && labDatePicker.value && deliveryMethodInput) {
+            loadAvailableAppointmentHours(labDatePicker.value);
+        }
     }
 
     // Populate order summary when going to step 5
@@ -1747,9 +2308,18 @@ function handleServiceTypeSelection() {
     switch (requestType.value) {
         case 'upload':
             fileUploadForm.classList.remove('hidden');
+            // Initialize file upload when form is shown
+            setTimeout(initializeFileUpload, 100);
             break;
         case 'electronic':
             ePrescriptionForm.classList.remove('hidden');
+            // Populate national ID from user account when electronic form is shown
+            setTimeout(() => {
+                const step2NationalId = document.getElementById('step2NationalId') || document.querySelector('#step2 input[placeholder*="کد ملی"]');
+                if (step2NationalId && window.userNationalId && !step2NationalId.value) {
+                    step2NationalId.value = window.userNationalId;
+                }
+            }, 100);
             break;
         case 'packages':
             testPackagesForm.classList.remove('hidden');
@@ -1776,16 +2346,21 @@ function handleDeliveryMethodSelection() {
     });
 
     if (deliveryMethod) {
+        // Show appointment schedule for all delivery methods
+        if (labScheduleSection) {
+            labScheduleSection.classList.remove('hidden');
+        }
+
         // Show relevant sections based on delivery method
         switch (deliveryMethod.value) {
             case 'home_sampling':
-                serviceLocationSection.classList.remove('hidden');
+                if (serviceLocationSection) serviceLocationSection.classList.remove('hidden');
                 break;
             case 'lab_visit':
-                labScheduleSection.classList.remove('hidden');
+                // Schedule section is already shown above
                 break;
             case 'sample_shipping':
-                labAddressSection.classList.remove('hidden');
+                if (labAddressSection) labAddressSection.classList.remove('hidden');
                 break;
         }
 
@@ -1980,27 +2555,46 @@ function removePackageFromSelection(packageId) {
     updateOrderSummary();
 }
 
-// Update order summary
+// Update order summary (no longer needed - prices shown in services list)
 function updateOrderSummary() {
-    const packageSummary = document.getElementById('packageSummary');
-    const packageTotal = document.getElementById('packageTotal');
-    const finalTotal = document.getElementById('finalTotal');
+    // Prices are now shown in services list, no separate summary needed
+}
 
-    if (selectedPackages.length > 0) {
-        packageSummary.classList.remove('hidden');
-        let total = 0;
-        selectedPackages.forEach(pkg => {
-            total += parseInt(pkg.price.replace(/,/g, ''));
-        });
-        packageTotal.textContent = `${total.toLocaleString()} تومان`;
-        finalTotal.textContent = `${(total + 50000 - 200000).toLocaleString()} تومان`;
+// Helper function to show/hide summary field
+function toggleSummaryField(elementId, show, value = '') {
+    const element = document.getElementById(elementId);
+    if (!element) return;
+    
+    // Find the parent div that contains both label and value (direct child of grid)
+    const gridContainer = element.closest('.grid');
+    if (gridContainer) {
+        // Find the div that contains this element (should be direct child of grid)
+        const parentDiv = Array.from(gridContainer.children).find(child => 
+            child.contains(element)
+        );
+        
+        if (parentDiv) {
+            if (show && value) {
+                parentDiv.style.display = '';
+                element.textContent = value;
+            } else {
+                parentDiv.style.display = 'none';
+            }
+            return;
+        }
+    }
+    
+    // Fallback: just update the text if structure is different
+    if (show && value) {
+        element.textContent = value;
+        element.parentElement.style.display = '';
     } else {
-        packageSummary.classList.add('hidden');
-        finalTotal.textContent = '۵۰,۰۰۰ تومان';
+        element.textContent = '-';
+        element.parentElement.style.display = 'none';
     }
 }
 
-// Populate order summary with all form data
+// Populate order summary with all form data (dynamic)
 function populateOrderSummary() {
     // Service type information
     const requestType = document.querySelector('input[name="requestType"]:checked');
@@ -2008,73 +2602,141 @@ function populateOrderSummary() {
     
     if (requestType) {
         const requestTypeText = getRequestTypeText(requestType.value);
-        document.getElementById('summaryRequestType').textContent = requestTypeText;
+        const summaryRequestType = document.getElementById('summaryRequestType');
+        if (summaryRequestType) {
+            summaryRequestType.textContent = requestTypeText;
+        }
     }
     
     if (deliveryMethod) {
         const deliveryText = getDeliveryMethodText(deliveryMethod.value);
-        document.getElementById('summaryDeliveryMethod').textContent = deliveryText;
+        const summaryDeliveryMethod = document.getElementById('summaryDeliveryMethod');
+        if (summaryDeliveryMethod) {
+            summaryDeliveryMethod.textContent = deliveryText;
+        }
     }
 
-    // Patient information
-    const patientName = document.querySelector('#step3 input[type="text"]:first-of-type')?.value;
-    const patientLastName = document.querySelector('#step3 input[type="text"]:nth-of-type(2)')?.value;
-    const nationalId = document.querySelector('#step3 input[type="text"]:nth-of-type(3)')?.value;
-    const mobile = document.querySelector('#step3 input[type="tel"]')?.value;
+    // Patient information - Show fields dynamically
+    const patientName = document.getElementById('patientFirstName')?.value?.trim();
+    const patientLastName = document.getElementById('patientLastName')?.value?.trim();
+    const nationalId = document.getElementById('patientNationalId')?.value?.trim();
+    const mobile = document.getElementById('patientMobile')?.value?.trim();
     
-    // Get address information based on delivery method
+    toggleSummaryField('summaryPatientName', patientName && patientLastName, `${patientName} ${patientLastName}`);
+    toggleSummaryField('summaryNationalId', nationalId, nationalId);
+    toggleSummaryField('summaryMobile', mobile, mobile);
+    
+    // Delivery method detail (separate from request type)
+    if (deliveryMethod) {
+        const deliveryText = getDeliveryMethodText(deliveryMethod.value);
+        toggleSummaryField('summaryDeliveryMethodDetail', true, deliveryText);
+    }
+    
+    // Date and time (separate fields)
+    const labDate = document.getElementById('labDatePicker')?.value?.trim();
+    const labTime = document.getElementById('labTimeSelect')?.value?.trim();
+    
+    toggleSummaryField('summaryAppointmentDate', labDate, labDate);
+    
+    if (labTime) {
+        const timeText = document.querySelector(`#labTimeSelect option[value="${labTime}"]`)?.textContent;
+        toggleSummaryField('summaryAppointmentTime', true, timeText || labTime);
+    } else {
+        toggleSummaryField('summaryAppointmentTime', false, '');
+    }
+    
+    // Address information - only show for home_sampling
+    const summaryAddressContainer = document.getElementById('summaryAddressContainer');
     let addressText = '';
-    const selectedDeliveryMethod = document.querySelector('input[name="deliveryMethod"]:checked');
-    if (selectedDeliveryMethod && selectedDeliveryMethod.value === 'home') {
+    
+    if (deliveryMethod && deliveryMethod.value === 'home_sampling') {
         const city = document.getElementById('citySelect')?.value;
-        const address = document.getElementById('addressTextarea')?.value;
+        const address = document.getElementById('addressTextarea')?.value?.trim();
         if (city) {
             addressText = getCityText(city);
             if (address) {
                 addressText += ' - ' + address;
             }
         }
-    } else if (selectedDeliveryMethod && selectedDeliveryMethod.value === 'lab') {
-        const labDate = document.getElementById('labDatePicker')?.value;
-        const labTime = document.getElementById('labTimeSelect')?.value;
-        if (labDate && labTime) {
-            const timeText = document.querySelector(`#labTimeSelect option[value="${labTime}"]`)?.textContent;
-            addressText = `مراجعه به آزمایشگاه - ${labDate} - ${timeText}`;
+        
+        // Show address container
+        if (summaryAddressContainer) {
+            summaryAddressContainer.style.display = '';
+            const addressElement = document.getElementById('summaryAddress');
+            if (addressElement && addressText) {
+                addressElement.textContent = addressText;
+            }
         }
-    } else if (selectedDeliveryMethod && selectedDeliveryMethod.value === 'sample') {
-        addressText = 'ارسال نمونه به آزمایشگاه - اردبیل، خیابان دانشگاه، پلاک ۱۲۳، کد پستی: ۵۶۱۳۸-۳۴۱۳۵';
+    } else {
+        // Hide address container for other delivery methods
+        if (summaryAddressContainer) {
+            summaryAddressContainer.style.display = 'none';
+        }
     }
 
-    if (patientName && patientLastName) {
-        document.getElementById('summaryPatientName').textContent = `${patientName} ${patientLastName}`;
-    }
-    if (nationalId) {
-        document.getElementById('summaryNationalId').textContent = nationalId;
-    }
-    if (mobile) {
-        document.getElementById('summaryMobile').textContent = mobile;
-    }
-    if (addressText) {
-        document.getElementById('summaryAddress').textContent = addressText;
-    }
+    // Insurance information - Show fields dynamically
+    const basicInsuranceSelect = document.querySelector('#step4 select:first-of-type');
+    const supplementaryInsuranceSelect = document.querySelector('#step4 select:nth-of-type(2)');
+    const trackingCodeInput = document.querySelector('#step4 input[type="text"]');
+    
+    const basicInsurance = basicInsuranceSelect?.value || '';
+    const supplementaryInsurance = supplementaryInsuranceSelect?.value || '';
+    const trackingCode = trackingCodeInput?.value?.trim() || '';
 
-    // Insurance information
-    const basicInsurance = document.querySelector('#step4 select:first-of-type')?.value;
-    const supplementaryInsurance = document.querySelector('#step4 select:nth-of-type(2)')?.value;
-    const trackingCode = document.querySelector('#step4 input[type="text"]')?.value;
-
-    if (basicInsurance) {
-        document.getElementById('summaryBasicInsurance').textContent = getInsuranceText(basicInsurance);
-    }
-    if (supplementaryInsurance) {
-        document.getElementById('summarySupplementaryInsurance').textContent = getInsuranceText(supplementaryInsurance);
-    }
-    if (trackingCode) {
-        document.getElementById('summaryTrackingCode').textContent = trackingCode;
-    }
+    // Always show insurance fields
+    // For basic insurance: if empty, show "بیمه ندارم", otherwise show the insurance name
+    const basicInsuranceText = basicInsurance ? getInsuranceText(basicInsurance) : 'بیمه ندارم';
+    toggleSummaryField('summaryBasicInsurance', true, basicInsuranceText);
+    
+    // For supplementary insurance: if empty, show "بیمه تکمیلی ندارم", otherwise show the insurance name
+    const supplementaryInsuranceText = supplementaryInsurance ? getInsuranceText(supplementaryInsurance) : 'بیمه تکمیلی ندارم';
+    toggleSummaryField('summarySupplementaryInsurance', true, supplementaryInsuranceText);
+    
+    // Show tracking code only if it has value
+    toggleSummaryField('summaryTrackingCode', trackingCode, trackingCode);
 
     // Services list
     updateServicesList();
+}
+
+// Update order summary prices
+function updateOrderSummaryPrices() {
+    const packageSummary = document.getElementById('packageSummary');
+    const packageTotal = document.getElementById('packageTotal');
+    const finalTotal = document.getElementById('finalTotal');
+    
+    let packagesTotal = 0;
+    
+    // Calculate packages total
+    if (selectedPackages.length > 0) {
+        packageSummary?.classList.remove('hidden');
+        selectedPackages.forEach(pkg => {
+            // Remove Persian digits and convert to number
+            const priceStr = pkg.price.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                                       .replace(/,/g, '');
+            packagesTotal += parseInt(priceStr) || 0;
+        });
+        if (packageTotal) {
+            packageTotal.textContent = `${packagesTotal.toLocaleString('fa-IR')} تومان`;
+        }
+    } else {
+        packageSummary?.classList.add('hidden');
+    }
+    
+    // Calculate final total
+    if (finalTotal) {
+        if (selectedPackages.length > 0 && packagesTotal > 0) {
+            // Show total if packages are selected
+            finalTotal.textContent = `${packagesTotal.toLocaleString('fa-IR')} تومان`;
+            finalTotal.classList.remove('text-orange-600');
+            finalTotal.classList.add('text-blue-600');
+        } else {
+            // Show "needs review" if no packages selected
+            finalTotal.textContent = 'نیاز به بررسی دارد';
+            finalTotal.classList.remove('text-blue-600');
+            finalTotal.classList.add('text-orange-600');
+        }
+    }
 }
 
 // Get request type text
@@ -2090,9 +2752,9 @@ function getRequestTypeText(value) {
 // Get delivery method text
 function getDeliveryMethodText(value) {
     const methods = {
-        'home': 'نمونه‌گیری در منزل',
-        'lab': 'مراجعه به آزمایشگاه',
-        'sample': 'ارسال نمونه'
+        'home_sampling': 'نمونه‌گیری در منزل',
+        'lab_visit': 'مراجعه به آزمایشگاه',
+        'sample_shipping': 'ارسال نمونه'
     };
     return methods[value] || value;
 }
@@ -2184,13 +2846,20 @@ function updateServicesList() {
             case 'packages':
                 if (selectedPackages.length > 0) {
                     selectedPackages.forEach(pkg => {
+                        // Convert price to number and format with currency symbol
+                        const priceStr = pkg.price.replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d))
+                                                   .replace(/,/g, '');
+                        const priceNum = parseInt(priceStr) || 0;
+                        // Format with three digits separation and currency symbol
+                        const formattedPrice = priceNum.toLocaleString('fa-IR') + ' تومان';
+                        
                         const serviceHTML = `
                             <div class="flex items-center justify-between py-2 border-b border-gray-200">
                                 <div class="flex items-center">
                                     <i class="fas fa-box-open text-purple-600 ml-3"></i>
                                     <span class="text-gray-900">${pkg.name}</span>
                                 </div>
-                                <span class="font-medium text-gray-900">${pkg.price}</span>
+                                <span class="font-medium text-gray-900">${formattedPrice}</span>
                             </div>
                         `;
                         servicesList.innerHTML += serviceHTML;
@@ -2205,6 +2874,12 @@ function updateServicesList() {
 
 // Initialize multi-step form
 function initializeMultiStepForm() {
+    // Add form submit event listener
+    const serviceRequestForm = document.getElementById('serviceRequestForm');
+    if (serviceRequestForm) {
+        serviceRequestForm.addEventListener('submit', submitRequest);
+    }
+
     // Add event listeners for service type selection
     const requestTypeInputs = document.querySelectorAll('input[name="requestType"]');
     requestTypeInputs.forEach(input => {
@@ -2241,6 +2916,25 @@ function initializeMultiStepForm() {
         doctorNameInput.addEventListener('input', clearStep2Errors);
     }
 
+    // Add event listeners for step 3 form fields
+    const patientFirstName = document.getElementById('patientFirstName');
+    const patientLastName = document.getElementById('patientLastName');
+    const patientNationalId = document.getElementById('patientNationalId');
+    const patientMobile = document.getElementById('patientMobile');
+    
+    if (patientFirstName) {
+        patientFirstName.addEventListener('input', clearStep3Errors);
+    }
+    if (patientLastName) {
+        patientLastName.addEventListener('input', clearStep3Errors);
+    }
+    if (patientNationalId) {
+        patientNationalId.addEventListener('input', clearStep3Errors);
+    }
+    if (patientMobile) {
+        patientMobile.addEventListener('input', clearStep3Errors);
+    }
+
     // File upload is handled by initializeFileUpload function
 
     // Package selection is handled by togglePackage function via onclick events
@@ -2248,13 +2942,172 @@ function initializeMultiStepForm() {
     // Initialize lab date picker
     const labDatePicker = document.getElementById('labDatePicker');
     if (labDatePicker && typeof $ !== 'undefined' && typeof $.fn !== 'undefined' && typeof $.fn.persianDatepicker !== 'undefined') {
-        $(labDatePicker).persianDatepicker({
+        const $labDatePicker = $(labDatePicker);
+        
+        $labDatePicker.persianDatepicker({
             format: 'YYYY/MM/DD',
             autoClose: true,
             showToday: true,
-            showClear: true
+            showClear: true,
+            onSelect: (formattedDate, dateObj) => {
+                console.log('APL: PersianDatepicker onSelect triggered - Date:', formattedDate, 'DateObj:', dateObj);
+                // Get the formatted date from the input field value (more reliable)
+                // Use a small timeout to ensure the input value is updated
+                setTimeout(() => {
+                    const dateValue = $labDatePicker.val();
+                    console.log('APL: Date value from input field:', dateValue);
+                    if (dateValue && dateValue.trim() !== '') {
+                        // Convert Persian numbers to English if needed
+                        const englishDate = convertPersianToEnglish(dateValue);
+                        if (englishDate.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                            loadAvailableAppointmentHours(englishDate);
+                        } else {
+                            console.warn('APL: Invalid date format:', englishDate);
+                        }
+                    } else {
+                        // Clear time select if date is cleared
+                        const labTimeSelect = document.getElementById('labTimeSelect');
+                        if (labTimeSelect) {
+                            labTimeSelect.innerHTML = '<option value="">ساعت مورد نظر را انتخاب کنید</option>';
+                            labTimeSelect.disabled = true;
+                        }
+                    }
+                }, 100);
+            }
+        });
+        
+        // Listen for change events (triggered when PersianDatepicker updates the input value)
+        $labDatePicker.on('change', function() {
+            const dateValue = $(this).val();
+            console.log('APL: Date input change event - Value:', dateValue);
+            if (dateValue && dateValue.trim() !== '') {
+                // Convert Persian numbers to English if needed
+                const englishDate = convertPersianToEnglish(dateValue);
+                if (englishDate.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    loadAvailableAppointmentHours(englishDate);
+                }
+            } else {
+                // Clear time select if date is cleared
+                const labTimeSelect = document.getElementById('labTimeSelect');
+                if (labTimeSelect) {
+                    labTimeSelect.innerHTML = '<option value="">ساعت مورد نظر را انتخاب کنید</option>';
+                    labTimeSelect.disabled = true;
+                }
+            }
+        });
+        
+        // Also listen for native input events (as fallback)
+        labDatePicker.addEventListener('input', function() {
+            const dateValue = this.value.trim();
+            console.log('APL: Date input native event - Value:', dateValue);
+            if (dateValue) {
+                // Convert Persian numbers to English if needed
+                const englishDate = convertPersianToEnglish(dateValue);
+                if (englishDate.match(/^\d{4}\/\d{2}\/\d{2}$/)) {
+                    loadAvailableAppointmentHours(englishDate);
+                }
+            } else {
+                // Clear time select if date is cleared
+                const labTimeSelect = document.getElementById('labTimeSelect');
+                if (labTimeSelect) {
+                    labTimeSelect.innerHTML = '<option value="">ساعت مورد نظر را انتخاب کنید</option>';
+                    labTimeSelect.disabled = true;
+                }
+            }
         });
     }
+}
+
+// Load available appointment hours based on selected date and service delivery method
+function loadAvailableAppointmentHours(appointmentDate) {
+    const labTimeSelect = document.getElementById('labTimeSelect');
+    if (!labTimeSelect) {
+        return;
+    }
+
+    // Validate appointment date
+    if (!appointmentDate || appointmentDate === null || appointmentDate === undefined) {
+        labTimeSelect.innerHTML = '<option value="">لطفاً تاریخ را انتخاب کنید</option>';
+        return;
+    }
+
+    // Get selected delivery method from step 1
+    const deliveryMethodInput = document.querySelector('input[name="deliveryMethod"]:checked');
+    if (!deliveryMethodInput) {
+        labTimeSelect.innerHTML = '<option value="">لطفاً ابتدا نحوه ارائه خدمات را انتخاب کنید</option>';
+        return;
+    }
+
+    const serviceDeliveryMethod = deliveryMethodInput.value;
+
+    // Convert Persian numbers to English for AJAX request
+    // Ensure appointmentDate is a string before conversion
+    const englishDate = convertPersianToEnglish(String(appointmentDate));
+    
+    // Validate converted date
+    if (!englishDate || englishDate.trim() === '') {
+        labTimeSelect.innerHTML = '<option value="">تاریخ نامعتبر است</option>';
+        return;
+    }
+
+    // Debug logging
+    console.log('APL: Loading hours - Original date:', appointmentDate);
+    console.log('APL: English date:', englishDate);
+    console.log('APL: Service method:', serviceDeliveryMethod);
+
+    // Show loading state
+    labTimeSelect.disabled = true;
+    labTimeSelect.innerHTML = '<option value="">در حال بارگذاری...</option>';
+
+    // Check if ajaxurl is available
+    const ajaxUrl = typeof apl_ajax !== 'undefined' ? apl_ajax.ajaxurl : (typeof ajaxurl !== 'undefined' ? ajaxurl : '/wp-admin/admin-ajax.php');
+
+    // Prepare form data
+    const formData = new FormData();
+    formData.append('action', 'apl_get_available_hours');
+    formData.append('appointment_date', englishDate);
+    formData.append('service_delivery_method', serviceDeliveryMethod);
+
+    console.log('APL: AJAX URL:', ajaxUrl);
+    console.log('APL: Request data:', {
+        action: 'apl_get_available_hours',
+        appointment_date: englishDate,
+        service_delivery_method: serviceDeliveryMethod
+    });
+
+    // Fetch available hours
+    fetch(ajaxUrl, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('APL: Response received:', data);
+        labTimeSelect.disabled = false;
+        labTimeSelect.innerHTML = '<option value="">ساعت مورد نظر را انتخاب کنید</option>';
+
+        if (data.success && data.data.hours && data.data.hours.length > 0) {
+            // Populate hours
+            data.data.hours.forEach(hour => {
+                const option = document.createElement('option');
+                option.value = hour.time;
+                option.textContent = hour.label;
+                labTimeSelect.appendChild(option);
+            });
+        } else {
+            // No available hours
+            const option = document.createElement('option');
+            option.value = '';
+            option.textContent = 'هیچ ساعت خالی برای این تاریخ یافت نشد';
+            option.disabled = true;
+            labTimeSelect.appendChild(option);
+        }
+    })
+    .catch(error => {
+        console.error('Error loading available hours:', error);
+        labTimeSelect.disabled = false;
+        labTimeSelect.innerHTML = '<option value="">خطا در بارگذاری ساعت‌ها</option>';
+    });
 }
 
 // Handle file upload
@@ -2971,3 +3824,376 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 });
+
+// Orders Management Functions
+function loadUserOrders() {
+    const loadingEl = document.getElementById('ordersLoading');
+    const emptyEl = document.getElementById('ordersEmpty');
+    const containerEl = document.getElementById('ordersContainer');
+    
+    // Show loading state
+    loadingEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    containerEl.classList.add('hidden');
+    
+    // Make AJAX request
+    jQuery.ajax({
+        url: apl_ajax.ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'apl_get_user_orders',
+            nonce: apl_ajax.dashboard_nonce
+        },
+        success: function(response) {
+            loadingEl.classList.add('hidden');
+            
+            if (response.success && response.data.orders.length > 0) {
+                renderOrders(response.data.orders);
+                containerEl.classList.remove('hidden');
+            } else {
+                emptyEl.classList.remove('hidden');
+            }
+        },
+        error: function(xhr, status, error) {
+            loadingEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+            console.error('Error loading orders:', error);
+        }
+    });
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('ordersContainer');
+    container.innerHTML = '';
+    
+    orders.forEach(order => {
+        const orderCard = renderOrderCard(order);
+        container.appendChild(orderCard);
+    });
+}
+
+function renderOrderCard(order) {
+    const card = document.createElement('div');
+    card.className = 'bg-white rounded-xl shadow-sm border border-gray-200 p-6';
+    
+    // Get status configuration
+    const statusConfig = getOrderStatusConfig(order.status, order.needs_payment);
+    
+    // Get delivery method icon
+    const deliveryIcon = getDeliveryMethodIcon(order.delivery_method);
+    
+    // Get payment status text and icon
+    const paymentInfo = getPaymentInfo(order);
+    
+    // Build buttons
+    const buttons = buildOrderButtons(order);
+    
+    // Build details HTML
+    const detailsHTML = buildOrderDetailsHTML(order, statusConfig);
+    
+    card.innerHTML = `
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between">
+            <div class="flex-1">
+                <div class="flex items-center mb-2">
+                    <h3 class="text-lg font-semibold text-gray-900 ml-3">آزمایش #${order.number}</h3>
+                    <span class="${statusConfig.badgeClass} px-3 py-1 rounded-full text-xs font-medium">${order.status_label}</span>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm text-gray-600">
+                    ${order.appointment_datetime ? `
+                    <div class="flex items-center">
+                        <i class="fas fa-calendar ml-2"></i>
+                        <span>${order.appointment_datetime}</span>
+                    </div>
+                    ` : ''}
+                    ${order.delivery_method_label ? `
+                    <div class="flex items-center">
+                        <i class="${deliveryIcon} ml-2"></i>
+                        <span>${order.delivery_method_label}</span>
+                    </div>
+                    ` : ''}
+                    <div class="flex items-center">
+                        <i class="${paymentInfo.icon} ml-2 ${paymentInfo.iconColor || ''}"></i>
+                        <span>${paymentInfo.text} - ${formatPrice(order.total)} ${order.currency_symbol}</span>
+                    </div>
+                </div>
+            </div>
+            <div class="flex space-x-2 space-x-reverse mt-4 lg:mt-0">
+                ${buttons}
+            </div>
+        </div>
+        
+        <!-- Expanded Details -->
+        <div id="order-${order.id}-details" class="hidden mt-6 pt-6 border-t border-gray-200">
+            ${detailsHTML}
+        </div>
+    `;
+    
+    return card;
+}
+
+function getOrderStatusConfig(status, needsPayment) {
+    const configs = {
+        'completed': {
+            badgeClass: 'status-completed bg-green-100 text-green-800',
+        },
+        'processing': {
+            badgeClass: 'status-progress bg-blue-100 text-blue-800',
+        },
+        'on-hold': {
+            badgeClass: 'status-progress bg-yellow-100 text-yellow-800',
+        },
+        'pending': {
+            badgeClass: 'status-pending bg-orange-100 text-orange-800',
+        },
+        'cancelled': {
+            badgeClass: 'bg-red-100 text-red-800',
+        },
+        'refunded': {
+            badgeClass: 'bg-gray-100 text-gray-800',
+        },
+        'failed': {
+            badgeClass: 'bg-red-100 text-red-800',
+        }
+    };
+    
+    return configs[status] || {
+        badgeClass: 'bg-gray-100 text-gray-800',
+    };
+}
+
+function getDeliveryMethodIcon(deliveryMethod) {
+    const icons = {
+        'home_sampling': 'fas fa-home',
+        'lab_visit': 'fas fa-building',
+        'sample_shipping': 'fas fa-truck'
+    };
+    return icons[deliveryMethod] || 'fas fa-map-marker-alt';
+}
+
+function getPaymentInfo(order) {
+    if (order.payment_status === 'paid') {
+        return {
+            icon: 'fas fa-credit-card',
+            text: 'پرداخت شده'
+        };
+    } else if (order.needs_payment) {
+        return {
+            icon: 'fas fa-exclamation-triangle',
+            iconColor: 'text-orange-500',
+            text: 'نیاز به پرداخت'
+        };
+    } else {
+        return {
+            icon: 'fas fa-credit-card',
+            text: order.status_label
+        };
+    }
+}
+
+function buildOrderButtons(order) {
+    let buttons = '';
+    
+    // View button (always shown)
+    buttons += `
+        <button onclick="toggleOrderDetails('order-${order.id}')" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+            <i class="fas fa-eye ml-1"></i>مشاهده
+        </button>
+    `;
+    
+    // Results button (only for completed orders)
+    if (order.status === 'completed') {
+        buttons += `
+            <button onclick="downloadInvoice(${order.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+                <i class="fas fa-download ml-1"></i>نتایج
+            </button>
+        `;
+    }
+    
+    // Payment button (only for orders needing payment)
+    if (order.needs_payment && order.payment_url) {
+        buttons += `
+            <a href="${order.payment_url}" target="_blank" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm inline-block text-center">
+                <i class="fas fa-credit-card ml-1"></i>پرداخت
+            </a>
+        `;
+    }
+    
+    return buttons;
+}
+
+function buildOrderDetailsHTML(order, statusConfig) {
+    // Build pricing breakdown based on delivery method
+    let pricingHTML = '';
+    const pricingBgClass = order.needs_payment ? 'bg-orange-50' : 'bg-blue-50';
+    const totalColorClass = order.needs_payment ? 'text-orange-600' : 'text-blue-600';
+    
+    pricingHTML += `
+        <div class="flex justify-between">
+            <span class="text-gray-600">قیمت ${order.items_count > 0 ? 'بسته' : 'محصولات'}:</span>
+            <span class="font-medium">${formatPrice(order.subtotal)} ${order.currency_symbol}</span>
+        </div>
+    `;
+    
+    // Add shipping/fee based on delivery method
+    if (order.delivery_method === 'home_sampling') {
+        if (order.shipping_total > 0) {
+            pricingHTML += `
+                <div class="flex justify-between">
+                    <span class="text-gray-600">هزینه نمونه‌گیری در منزل:</span>
+                    <span class="font-medium">${formatPrice(order.shipping_total)} ${order.currency_symbol}</span>
+                </div>
+            `;
+        }
+    }
+    
+    // Add fees
+    if (order.fees && order.fees.length > 0) {
+        order.fees.forEach(fee => {
+            const feeName = fee.name || 'هزینه اضافی';
+            pricingHTML += `
+                <div class="flex justify-between">
+                    <span class="text-gray-600">${feeName}:</span>
+                    <span class="font-medium">${formatPrice(Math.abs(fee.total))} ${order.currency_symbol}</span>
+                </div>
+            `;
+        });
+    }
+    
+    // Add discount
+    if (order.discount_total > 0) {
+        pricingHTML += `
+            <div class="flex justify-between">
+                <span class="text-gray-600">تخفیف:</span>
+                <span class="font-medium text-green-600">-${formatPrice(order.discount_total)} ${order.currency_symbol}</span>
+            </div>
+        `;
+    }
+    
+    // Add pending payment warning
+    let paymentWarningHTML = '';
+    if (order.needs_payment) {
+        paymentWarningHTML = `
+            <div class="mt-3 p-3 bg-orange-100 rounded-lg">
+                <p class="text-orange-800 text-sm font-medium">
+                    <i class="fas fa-exclamation-triangle ml-2"></i>
+                    این سفارش در انتظار پرداخت است
+                </p>
+            </div>
+        `;
+    }
+    
+    // Build items list
+    const itemsList = order.items_list && order.items_list.length > 0 
+        ? order.items_list.join(' • ') 
+        : 'اطلاعات محصولات در دسترس نیست';
+    
+    // Patient information (only show if exists)
+    let patientInfoHTML = '';
+    if (order.patient_name || order.patient_national_id || order.patient_mobile || order.full_address) {
+        patientInfoHTML = `
+            <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات بیمار</h4>
+                <div class="space-y-3">
+                    ${order.patient_name ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">نام و نام خانوادگی:</span>
+                        <span class="font-medium">${order.patient_name}</span>
+                    </div>
+                    ` : ''}
+                    ${order.patient_national_id ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">کد ملی:</span>
+                        <span class="font-medium">${order.patient_national_id}</span>
+                    </div>
+                    ` : ''}
+                    ${order.patient_mobile ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">شماره تماس:</span>
+                        <span class="font-medium">${order.patient_mobile}</span>
+                    </div>
+                    ` : ''}
+                    ${order.full_address ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">آدرس:</span>
+                        <span class="font-medium">${order.full_address}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    return `
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Order Information -->
+            <div>
+                <h4 class="text-lg font-semibold text-gray-900 mb-4">اطلاعات سفارش</h4>
+                <div class="space-y-3">
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">شماره سفارش:</span>
+                        <span class="font-medium">${order.number}</span>
+                    </div>
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">تاریخ ثبت:</span>
+                        <span class="font-medium">${order.date}</span>
+                    </div>
+                    ${order.request_type_label ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">نوع درخواست:</span>
+                        <span class="font-medium">${order.request_type_label}</span>
+                    </div>
+                    ` : ''}
+                    ${order.items && order.items.length > 0 ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">${order.items.length === 1 ? 'محصول' : 'محصولات'} انتخاب شده:</span>
+                        <span class="font-medium">${order.items.map(item => item.name).join('، ')}</span>
+                    </div>
+                    ` : ''}
+                    ${order.delivery_method_label ? `
+                    <div class="flex justify-between">
+                        <span class="text-gray-600">نحوه ارائه:</span>
+                        <span class="font-medium">${order.delivery_method_label}</span>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+            
+            ${patientInfoHTML}
+        </div>
+        
+        ${order.items_list && order.items_list.length > 0 ? `
+        <!-- Tests Included -->
+        <div class="mt-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">آزمایش‌های شامل</h4>
+            <div class="bg-gray-50 rounded-lg p-4">
+                <p class="text-sm text-gray-600 mb-2">${itemsList}</p>
+            </div>
+        </div>
+        ` : ''}
+        
+        <!-- Pricing Details -->
+        <div class="mt-6">
+            <h4 class="text-lg font-semibold text-gray-900 mb-4">جزئیات قیمت</h4>
+            <div class="${pricingBgClass} rounded-lg p-4">
+                <div class="space-y-2">
+                    ${pricingHTML}
+                    <hr class="my-2">
+                    <div class="flex justify-between text-lg font-bold">
+                        <span>مجموع:</span>
+                        <span class="${totalColorClass}">${formatPrice(order.total)} ${order.currency_symbol}</span>
+                    </div>
+                    ${paymentWarningHTML}
+                </div>
+            </div>
+        </div>
+    `;
+}
+
+function formatPrice(price) {
+    return new Intl.NumberFormat('fa-IR').format(Math.round(price));
+}
+
+function downloadInvoice(orderId) {
+    // Get invoice URL from order data or construct it
+    window.open(`?apl_action=view_invoice&order_id=${orderId}&nonce=${apl_ajax.dashboard_nonce}`, '_blank');
+}

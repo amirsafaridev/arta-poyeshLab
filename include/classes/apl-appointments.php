@@ -29,6 +29,8 @@ class APL_Appointments {
         add_action('wp_ajax_apl_delete_appointment', array($this, 'ajax_delete_appointment'));
         add_action('wp_ajax_apl_bulk_delete_appointments', array($this, 'ajax_bulk_delete_appointments'));
         add_action('wp_ajax_apl_get_appointment', array($this, 'ajax_get_appointment'));
+        add_action('wp_ajax_apl_get_available_hours', array($this, 'ajax_get_available_hours'));
+        add_action('wp_ajax_nopriv_apl_get_available_hours', array($this, 'ajax_get_available_hours'));
         
         // Add nonce to script localization
         add_action('admin_enqueue_scripts', array($this, 'localize_scripts'));
@@ -1528,6 +1530,119 @@ class APL_Appointments {
         } else {
             wp_send_json_error(array('message' => 'خطا در حذف نوبت‌ها'));
         }
+    }
+    
+    /**
+     * Get available appointment hours for a specific date and service delivery method
+     */
+    public function get_available_hours($appointment_date, $service_delivery_method) {
+        global $wpdb;
+        
+       
+        
+        // Convert Persian date to Gregorian if needed
+        if (strpos($appointment_date, '/') !== false) {
+            $appointment_date = $this->convert_persian_to_gregorian($appointment_date);
+            error_log('APL: Converted date: ' . $appointment_date);
+        }
+        
+        if (!$appointment_date) {
+            error_log('APL: Invalid date after conversion');
+            return array();
+        }
+        
+        $sql = $wpdb->prepare(
+            "SELECT appointment_time, status FROM {$this->table_name} 
+            WHERE appointment_date = %s 
+            AND service_delivery_method = %s 
+            AND status = 'available'
+            ORDER BY appointment_time ASC",
+            $appointment_date,
+            $service_delivery_method
+        );
+        
+        
+        $results = $wpdb->get_results($sql);
+        
+        
+        $hours = array();
+        foreach ($results as $result) {
+            $time_parts = explode(':', $result->appointment_time);
+            $hour = intval($time_parts[0]);
+            $minute = intval($time_parts[1]);
+            $time_str = sprintf('%02d:%02d', $hour, $minute);
+            
+            // Convert time to Persian numbers for label
+            $persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+            $english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+            $hour_label = str_replace($english_digits, $persian_digits, $time_str);
+            
+            $hours[] = array(
+                'time' => $time_str,
+                'hour' => $hour,
+                'minute' => $minute,
+                'label' => $hour_label
+            );
+        }
+        
+        return $hours;
+    }
+    
+    /**
+     * Format time in Persian format with readable label
+     */
+    private function format_persian_time($start_time, $end_time) {
+        // Convert to Persian numbers
+        $persian_digits = array('۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹');
+        $english_digits = array('0', '1', '2', '3', '4', '5', '6', '7', '8', '9');
+        
+        $start_parts = explode(':', $start_time);
+        $end_parts = explode(':', $end_time);
+        
+        $start_hour = str_replace($english_digits, $persian_digits, $start_parts[0]);
+        $end_hour = str_replace($english_digits, $persian_digits, $end_parts[0]);
+        
+        // Determine time period (صبح/ظهر/بعدازظهر)
+        $hour = intval($start_parts[0]);
+        $period = '';
+        if ($hour < 12) {
+            $period = 'صبح';
+        } elseif ($hour < 14) {
+            $period = 'ظهر';
+        } else {
+            $period = 'بعدازظهر';
+        }
+        
+        return "{$start_hour}:۰۰ - {$end_hour}:۰۰ {$period}";
+    }
+    
+    /**
+     * AJAX: Get available appointment hours
+     */
+    public function ajax_get_available_hours() {
+        // Check if required data exists
+        if (!isset($_POST['appointment_date']) || !isset($_POST['service_delivery_method'])) {
+            wp_send_json_error(array('message' => 'داده‌های مورد نیاز ارسال نشده است'));
+        }
+        
+        $appointment_date = sanitize_text_field($_POST['appointment_date']);
+        $service_delivery_method = sanitize_text_field($_POST['service_delivery_method']);
+        
+         
+        $hours = $this->get_available_hours($appointment_date, $service_delivery_method);
+        
+        
+        if (empty($hours)) {
+            wp_send_json_success(array(
+                'hours' => array(),
+                'message' => 'هیچ ساعت خالی برای این تاریخ یافت نشد'
+            ));
+        }
+        
+        wp_send_json_success(array(
+            'hours' => $hours,
+            'message' => sprintf('تعداد %d ساعت خالی یافت شد', count($hours))
+        ));
     }
 }
 
