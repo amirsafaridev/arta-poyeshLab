@@ -366,6 +366,8 @@ function verifyLoginOTP() {
             
             if (response.success) {
                 isLoggedIn = true;
+                // Load test results notification after login
+                loadTestResultsNotification();
                 showSuccess(response.data.message);
                 if (response.data.redirect) {
                     window.location.href = response.data.redirect;
@@ -511,6 +513,8 @@ function verifyRegisterOTP() {
             
             if (response.success) {
                 isLoggedIn = true;
+                // Load test results notification after login
+                loadTestResultsNotification();
                 showSuccess(response.data.message);
                 if (response.data.redirect) {
                     window.location.href = response.data.redirect;
@@ -780,6 +784,16 @@ function showSection(sectionName) {
     // Load orders when orders section is shown
     if (sectionName === 'orders') {
         loadUserOrders();
+    }
+    
+    // Load test results when results section is shown
+    if (sectionName === 'results') {
+        loadUserTestResults();
+    }
+    
+    // Load recent activities when overview section is shown
+    if (sectionName === 'overview') {
+        loadRecentActivities();
     }
 }
 
@@ -4000,10 +4014,11 @@ function buildOrderButtons(order) {
         </button>
     `;
     
-    // Results button (only for completed orders)
-    if (order.status === 'completed') {
+    // Results button (only if test result exists for this order)
+    const testResultCard = document.getElementById(`test-result-order-${order.id}`);
+    if (testResultCard) {
         buttons += `
-            <button onclick="downloadInvoice(${order.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
+            <button onclick="showTestResultForOrder(${order.id})" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm">
                 <i class="fas fa-download ml-1"></i>نتایج
             </button>
         `;
@@ -4197,3 +4212,365 @@ function downloadInvoice(orderId) {
     // Get invoice URL from order data or construct it
     window.open(`?apl_action=view_invoice&order_id=${orderId}&nonce=${apl_ajax.dashboard_nonce}`, '_blank');
 }
+
+function showTestResultForOrder(orderId) {
+    // Show results section first
+    showSection('results');
+    
+    // Wait for results to load, then scroll to the specific card
+    setTimeout(() => {
+        const testResultCard = document.getElementById(`test-result-order-${orderId}`);
+        
+        if (testResultCard) {
+            testResultCard.scrollIntoView({ 
+                behavior: 'smooth', 
+                block: 'center' 
+            });
+            
+            // Add a highlight effect
+            testResultCard.style.transition = 'box-shadow 0.3s ease';
+            testResultCard.style.boxShadow = '0 0 0 3px rgba(34, 113, 177, 0.3)';
+            
+            // Remove highlight after 2 seconds
+            setTimeout(() => {
+                testResultCard.style.boxShadow = '';
+            }, 2000);
+        }
+    }, 500);
+}
+
+// Test Results Management Functions
+function loadUserTestResults() {
+    const loadingEl = document.getElementById('testResultsLoading');
+    const emptyEl = document.getElementById('testResultsEmpty');
+    const containerEl = document.getElementById('testResultsContainer');
+    
+    // Show loading state
+    loadingEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    containerEl.classList.add('hidden');
+    
+    // Make AJAX request
+    jQuery.ajax({
+        url: apl_ajax.ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'apl_get_user_test_results',
+            nonce: apl_ajax.dashboard_nonce
+        },
+        success: function(response) {
+            loadingEl.classList.add('hidden');
+            
+            if (response.success && response.data.test_results.length > 0) {
+                renderTestResults(response.data.test_results);
+                containerEl.classList.remove('hidden');
+                
+                // Update notification banner
+                updateTestResultsNotification(response.data.unseen_count);
+            } else {
+                emptyEl.classList.remove('hidden');
+                updateTestResultsNotification(0);
+            }
+        },
+        error: function(xhr, status, error) {
+            loadingEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+            console.error('Error loading test results:', error);
+        }
+    });
+}
+
+function renderTestResults(testResults) {
+    const container = document.getElementById('testResultsContainer');
+    container.innerHTML = '';
+    
+    testResults.forEach(result => {
+        const card = document.createElement('div');
+        card.id = `test-result-order-${result.order_id}`;
+        card.className = 'bg-white rounded-xl shadow-sm border border-gray-200 p-6';
+        
+        const iconClass = result.has_file ? 'fa-file-medical-alt text-green-600' : 'fa-clock text-orange-600';
+        const iconBg = result.has_file ? 'bg-green-100' : 'bg-orange-100';
+        
+        let fileActionsHTML = '';
+        if (result.has_file) {
+            fileActionsHTML = `
+                <a href="${result.file_url}" target="_blank" class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium inline-flex items-center">
+                    <i class="fas fa-eye ml-2"></i>مشاهده
+                </a>
+                <a href="${result.file_url}" download class="bg-green-600 text-white px-6 py-3 rounded-lg hover:bg-green-700 transition duration-200 font-medium inline-flex items-center">
+                    <i class="fas fa-download ml-2"></i>دانلود
+                </a>
+            `;
+        } else {
+            fileActionsHTML = `
+                <span class="bg-gray-300 text-gray-600 px-6 py-3 rounded-lg font-medium inline-flex items-center cursor-not-allowed">
+                    <i class="fas fa-clock ml-2"></i>در انتظار
+                </span>
+            `;
+        }
+        
+        let fileInfoHTML = '';
+        if (result.has_file && result.file_name) {
+            fileInfoHTML = `
+                <div class="mt-4 pt-4 border-t border-gray-200">
+                    <p class="text-sm text-gray-600">
+                        <i class="fas fa-file ml-2"></i>
+                        ${result.file_name}
+                        ${result.file_size ? `<span class="text-gray-500">(${result.file_size})</span>` : ''}
+                    </p>
+                </div>
+            `;
+        }
+        
+        card.innerHTML = `
+            <div class="flex flex-col lg:flex-row lg:items-center justify-between">
+                <div class="flex items-center">
+                    <div class="w-12 h-12 ${iconBg} rounded-lg flex items-center justify-center ml-4">
+                        <i class="fas ${iconClass} text-xl"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">${escapeHtml(result.test_result_title)}</h3>
+                        <p class="text-gray-600">
+                            سفارش #${result.order_number}
+                            ${result.date ? ' - ' + result.date : ''}
+                        </p>
+                        <div class="flex items-center gap-2 mt-1">
+                            <span class="inline-block px-3 py-1 ${result.status_info.bg} ${result.status_info.text} text-xs font-medium rounded-full">
+                                ${escapeHtml(result.status_info.label)}
+                            </span>
+                            ${result.has_file ? `
+                                <span class="inline-block px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
+                                    نتایج آماده است
+                                </span>
+                            ` : `
+                                <span class="inline-block px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
+                                    در انتظار بارگذاری
+                                </span>
+                            `}
+                        </div>
+                    </div>
+                </div>
+                <div class="mt-4 lg:mt-0 flex gap-2">
+                    ${fileActionsHTML}
+                </div>
+            </div>
+            ${fileInfoHTML}
+        `;
+        
+        container.appendChild(card);
+    });
+}
+
+function updateTestResultsNotification(unseenCount) {
+    const notificationEl = document.getElementById('testResultsNotification');
+    const notificationText = document.getElementById('testResultsNotificationText');
+    
+    if (!notificationEl || !notificationText) {
+        console.warn('Test results notification elements not found');
+        return;
+    }
+    
+    // Debug log
+    console.log('Update notification called with unseenCount:', unseenCount);
+    
+    if (unseenCount > 0) {
+        const message = unseenCount === 1 
+            ? `نتایج آزمایش شما آماده است!`
+            : `${unseenCount} نتیجه آزمایش شما آماده است!`;
+        
+        notificationText.textContent = message;
+        notificationEl.classList.remove('hidden');
+        console.log('Notification shown');
+    } else {
+        notificationEl.classList.add('hidden');
+        console.log('Notification hidden');
+    }
+}
+
+// Recent Activities Management Functions
+function loadRecentActivities() {
+    const containerEl = document.getElementById('recentActivitiesContainer');
+    const loadingEl = document.getElementById('recentActivitiesLoading');
+    const emptyEl = document.getElementById('recentActivitiesEmpty');
+    
+    if (!containerEl || !loadingEl || !emptyEl) {
+        return;
+    }
+    
+    // Show loading state
+    loadingEl.classList.remove('hidden');
+    emptyEl.classList.add('hidden');
+    
+    // Clear existing activities (but keep loading/empty elements)
+    const existingActivities = containerEl.querySelectorAll('.activity-item');
+    existingActivities.forEach(item => item.remove());
+    
+    // Make AJAX request
+    jQuery.ajax({
+        url: apl_ajax.ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'apl_get_recent_activities',
+            nonce: apl_ajax.dashboard_nonce
+        },
+        success: function(response) {
+            loadingEl.classList.add('hidden');
+            
+            if (response.success && response.data.activities && response.data.activities.length > 0) {
+                renderRecentActivities(response.data.activities);
+            } else {
+                emptyEl.classList.remove('hidden');
+            }
+        },
+        error: function(xhr, status, error) {
+            loadingEl.classList.add('hidden');
+            emptyEl.classList.remove('hidden');
+            console.error('Error loading recent activities:', error);
+        }
+    });
+}
+
+function renderRecentActivities(activities) {
+    const container = document.getElementById('recentActivitiesContainer');
+    if (!container) return;
+    
+    const emptyEl = document.getElementById('recentActivitiesEmpty');
+    if (emptyEl) {
+        emptyEl.classList.add('hidden');
+    }
+    
+    // Clear existing activities
+    const existingActivities = container.querySelectorAll('.activity-item');
+    existingActivities.forEach(item => item.remove());
+    
+    activities.forEach(function(activity) {
+        const activityDiv = document.createElement('div');
+        activityDiv.className = 'activity-item flex items-center justify-between py-3 border-b border-gray-100';
+        
+        // Determine icon and color
+        const iconClasses = {
+            'check': 'fa-check',
+            'shopping-cart': 'fa-shopping-cart',
+            'calendar': 'fa-calendar'
+        };
+        const iconClass = iconClasses[activity.icon] || 'fa-circle';
+        const bgColorClass = activity.icon_color === 'green' ? 'bg-green-100' : 'bg-blue-100';
+        const textColorClass = activity.icon_color === 'green' ? 'text-green-600' : 'text-blue-600';
+        
+        // Format time ago
+        const timeAgo = formatTimeAgo(activity.timestamp);
+        
+        activityDiv.innerHTML = `
+            <div class="flex items-center">
+                <div class="w-10 h-10 ${bgColorClass} rounded-full flex items-center justify-center ml-4">
+                    <i class="fas ${iconClass} ${textColorClass}"></i>
+                </div>
+                <div>
+                    <p class="font-medium text-gray-900">${escapeHtml(activity.title)}</p>
+                    <p class="text-gray-600 text-sm">${escapeHtml(activity.description)}</p>
+                </div>
+            </div>
+            <span class="text-gray-500 text-sm">${timeAgo}</span>
+        `;
+        
+        container.appendChild(activityDiv);
+    });
+}
+
+function formatTimeAgo(timestamp) {
+    if (!timestamp) return '';
+    
+    const now = Math.floor(Date.now() / 1000);
+    const diff = now - timestamp;
+    
+    const seconds = diff;
+    const minutes = Math.floor(seconds / 60);
+    const hours = Math.floor(minutes / 60);
+    const days = Math.floor(hours / 24);
+    const weeks = Math.floor(days / 7);
+    const months = Math.floor(days / 30);
+    const years = Math.floor(days / 365);
+    
+    // Convert numbers to Persian
+    const persianDigits = ['۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
+    function toPersian(num) {
+        return String(num).split('').map(digit => persianDigits[parseInt(digit)] || digit).join('');
+    }
+    
+    if (years > 0) {
+        return `${toPersian(years)} ${years === 1 ? 'سال' : 'سال'} پیش`;
+    } else if (months > 0) {
+        return `${toPersian(months)} ${months === 1 ? 'ماه' : 'ماه'} پیش`;
+    } else if (weeks > 0) {
+        return `${toPersian(weeks)} ${weeks === 1 ? 'هفته' : 'هفته'} پیش`;
+    } else if (days > 0) {
+        return `${toPersian(days)} ${days === 1 ? 'روز' : 'روز'} پیش`;
+    } else if (hours > 0) {
+        return `${toPersian(hours)} ${hours === 1 ? 'ساعت' : 'ساعت'} پیش`;
+    } else if (minutes > 0) {
+        return `${toPersian(minutes)} ${minutes === 1 ? 'دقیقه' : 'دقیقه'} پیش`;
+    } else {
+        return 'همین الان';
+    }
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const map = {
+        '&': '&amp;',
+        '<': '&lt;',
+        '>': '&gt;',
+        '"': '&quot;',
+        "'": '&#039;'
+    };
+    return String(text).replace(/[&<>"']/g, function(m) { return map[m]; });
+}
+
+// Load test results notification on page load and after login
+function loadTestResultsNotification() {
+    // Always try to load notification if dashboard is visible
+    const dashboard = document.getElementById('dashboard');
+    if (!dashboard || dashboard.offsetParent === null) {
+        return; // Dashboard is not visible
+    }
+    
+    // Use separate endpoint to get unseen count without marking as seen
+    jQuery.ajax({
+        url: apl_ajax.ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'apl_get_unseen_test_results_count',
+            nonce: apl_ajax.dashboard_nonce
+        },
+        success: function(response) {
+            if (response.success && response.data) {
+                updateTestResultsNotification(response.data.unseen_count);
+            }
+        },
+        error: function(xhr, status, error) {
+            console.error('Error loading test results notification:', error);
+        }
+    });
+}
+
+// Load test results notification on page load
+jQuery(document).ready(function($) {
+    // Wait a bit for dashboard to be ready
+    setTimeout(function() {
+        loadTestResultsNotification();
+        
+        // Load recent activities if dashboard is visible and overview section is active
+        const dashboard = document.getElementById('dashboard');
+        const overviewSection = document.getElementById('overviewSection');
+        if (dashboard && 
+            !dashboard.classList.contains('hidden') && 
+            dashboard.offsetParent !== null &&
+            overviewSection && 
+            !overviewSection.classList.contains('hidden') &&
+            overviewSection.offsetParent !== null &&
+            currentSection === 'overview') {
+            loadRecentActivities();
+        }
+    }, 200);
+});

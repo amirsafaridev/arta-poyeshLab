@@ -28,12 +28,12 @@ class APL_Admin_Settings {
      */
     public function add_admin_menu() {
         add_menu_page(
-            'تنظیمات آزمایشگاه پوش',
-            'آزمایشگاه پوش',
+            'تنظیمات آزمایشگاه پویش',
+            'آزمایشگاه پویش',
             'manage_options',
             'apl-settings',
             array($this, 'settings_page'),
-            'dashicons-admin-generic',
+            'dashicons-clipboard',
             30
         );
         
@@ -80,6 +80,7 @@ class APL_Admin_Settings {
         register_setting('apl_login_settings', 'apl_login_subtitle');
         register_setting('apl_login_settings', 'apl_login_terms_text');
         register_setting('apl_login_settings', 'apl_order_success_message');
+        register_setting('apl_login_settings', 'apl_company_stamp');
     }
     
     /**
@@ -237,6 +238,26 @@ class APL_Admin_Settings {
                             <p class="description">متن نمایش داده شده در پاپ‌آپ موفقیت ثبت سفارش. می‌توانید از {order_number} برای شماره سفارش استفاده کنید.</p>
                         </td>
                     </tr>
+                    <tr>
+                        <th scope="row">مهر مجموعه</th>
+                        <td>
+                            <?php
+                            $stamp_id = get_option('apl_company_stamp');
+                            $stamp_url = $stamp_id ? wp_get_attachment_url($stamp_id) : '';
+                            ?>
+                            <div class="stamp-upload-container">
+                                <div class="stamp-preview" style="margin-bottom: 10px;">
+                                    <?php if ($stamp_url): ?>
+                                        <img src="<?php echo esc_url($stamp_url); ?>" style="max-width: 200px; max-height: 200px;" />
+                                    <?php endif; ?>
+                                </div>
+                                <input type="hidden" name="apl_company_stamp" id="apl_company_stamp" value="<?php echo esc_attr($stamp_id); ?>" />
+                                <button type="button" class="button" id="upload-stamp">انتخاب مهر</button>
+                                <button type="button" class="button" id="remove-stamp" style="display: <?php echo $stamp_url ? 'inline-block' : 'none'; ?>;">حذف مهر</button>
+                            </div>
+                            <p class="description">مهر مجموعه که در پایین فاکتورها نمایش داده می‌شود</p>
+                        </td>
+                    </tr>
                 </table>
                 
                 <?php submit_button(); ?>
@@ -246,7 +267,9 @@ class APL_Admin_Settings {
         <script>
         jQuery(document).ready(function($) {
             var mediaUploader;
+            var stampUploader;
             
+            // Logo upload
             $('#upload-logo').click(function(e) {
                 e.preventDefault();
                 
@@ -277,6 +300,40 @@ class APL_Admin_Settings {
                 e.preventDefault();
                 $('#apl_login_logo').val('');
                 $('.logo-preview').html('');
+                $(this).hide();
+            });
+            
+            // Stamp upload
+            $('#upload-stamp').click(function(e) {
+                e.preventDefault();
+                
+                if (stampUploader) {
+                    stampUploader.open();
+                    return;
+                }
+                
+                stampUploader = wp.media({
+                    title: 'انتخاب مهر',
+                    button: {
+                        text: 'انتخاب'
+                    },
+                    multiple: false
+                });
+                
+                stampUploader.on('select', function() {
+                    var attachment = stampUploader.state().get('selection').first().toJSON();
+                    $('#apl_company_stamp').val(attachment.id);
+                    $('.stamp-preview').html('<img src="' + attachment.url + '" style="max-width: 200px; max-height: 200px;" />');
+                    $('#remove-stamp').show();
+                });
+                
+                stampUploader.open();
+            });
+            
+            $('#remove-stamp').click(function(e) {
+                e.preventDefault();
+                $('#apl_company_stamp').val('');
+                $('.stamp-preview').html('');
                 $(this).hide();
             });
         });

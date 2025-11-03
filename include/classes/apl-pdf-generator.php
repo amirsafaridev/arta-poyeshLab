@@ -206,8 +206,10 @@ class APL_PDF_Generator {
                 box-shadow: none !important;
             }
             .items-table th {
-                background: #333 !important;
-                color: white !important;
+                background: #000 !important;
+                color: #fff !important;
+                -webkit-print-color-adjust: exact;
+                print-color-adjust: exact;
             }
             @page {
                 margin: 1cm;
@@ -219,105 +221,97 @@ class APL_PDF_Generator {
             direction: rtl;
             margin: 0;
             padding: 20px;
-            background: white;
+            background: #fff;
             color: #000;
-            line-height: 1.4;
+            line-height: 1.6;
         }
         .invoice-container {
             max-width: 800px;
             margin: 0 auto;
-            background: white;
-            padding: 20px;
-            border: 1px solid #ddd;
+            background: #fff;
+            padding: 30px;
         }
         .header {
             text-align: center;
-            border-bottom: 3px solid #333;
-            padding: 30px 20px;
-            margin-bottom: 40px;
-            background: #f8f9fa;
-            border-radius: 8px;
+            padding: 20px 0;
+            margin-bottom: 30px;
+            border-bottom: 1px solid #ddd;
         }
         .header h1 {
-            color: #333;
-            margin: 0 0 10px 0;
-            font-size: 28px;
+            color: #000;
+            margin: 0 0 8px 0;
+            font-size: 22px;
             font-weight: bold;
         }
         .header p {
-            color: #666;
-            margin: 8px 0;
-            font-size: 16px;
+            color: #000;
+            margin: 5px 0;
+            font-size: 14px;
+            font-weight: normal;
         }
         .header .invoice-number {
-            background: #333;
-            color: white;
-            padding: 8px 20px;
-            border-radius: 20px;
+            color: #000;
+            padding: 5px 15px;
             display: inline-block;
-            margin-top: 10px;
+            margin-top: 8px;
             font-weight: bold;
+            font-size: 13px;
         }
         .invoice-info {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 40px;
+            gap: 30px;
             margin-bottom: 30px;
         }
         .invoice-details, .customer-details {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            background: #fff;
+            padding: 15px;
         }
         .invoice-details h3, .customer-details h3 {
-            color: #333;
-            border-bottom: 2px solid #666;
-            padding-bottom: 10px;
-            margin-bottom: 20px;
-            font-size: 16px;
+            color: #000;
+            padding-bottom: 8px;
+            margin-bottom: 12px;
+            font-size: 15px;
             font-weight: bold;
         }
         .detail-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 8px;
+            padding-bottom: 6px;
         }
         .detail-label {
-            font-weight: bold;
-            color: #555;
+            font-weight: 500;
+            color: #000;
         }
         .detail-value {
-            color: #333;
+            color: #000;
         }
         .items-table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 30px;
-            background: white;
-            border-radius: 8px;
-            overflow: hidden;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            margin-bottom: 25px;
+            background: #fff;
         }
         .items-table th,
         .items-table td {
-            border: 1px solid #e9ecef;
-            padding: 15px 12px;
+            border-bottom: 1px solid #ddd;
+            padding: 10px;
             text-align: right;
+            color: #000;
         }
         .items-table th {
-            background: #333;
-            color: white;
+            background: #000;
+            color: #fff;
             font-weight: bold;
-            font-size: 14px;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
+            font-size: 13px;
+            border-bottom: 1px solid #000;
+        }
+        .items-table tbody tr {
+            background-color: #fff;
         }
         .items-table tbody tr:nth-child(even) {
-            background-color: #f8f9fa;
-        }
-        .items-table tbody tr:hover {
-            background-color: #e9ecef;
+            background-color: #fff;
         }
         .items-table .text-left {
             text-align: left;
@@ -331,82 +325,55 @@ class APL_PDF_Generator {
         .total-section {
             text-align: left;
             margin-top: 20px;
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 8px;
-            border: 1px solid #e9ecef;
+            background: #fff;
+            padding: 15px;
         }
         .total-row {
             display: flex;
             justify-content: space-between;
             margin-bottom: 10px;
-            padding: 12px 0;
-            border-bottom: 1px solid #e9ecef;
+            padding: 8px 0;
+            color: #000;
         }
         .total-row.final {
-            border-top: 3px solid #333;
-            border-bottom: none;
+            border-top: 1px solid #000;
             font-weight: bold;
-            font-size: 20px;
-            margin-top: 15px;
-            padding: 15px 0;
-            background: #f8f9fa;
-            border-radius: 4px;
-            padding-left: 15px;
-            padding-right: 15px;
+            font-size: 16px;
+            margin-top: 12px;
+            padding-top: 12px;
+            background: #fff;
         }
-        .status-badge {
-            display: inline-block;
-            padding: 4px 12px;
-            border-radius: 20px;
-            font-size: 12px;
-            font-weight: bold;
+        .footer-wrapper {
+            margin-top: 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            flex-direction: column;
         }
-        .status-completed {
-            background-color: #d4edda;
-            color: #155724;
+        .stamp-section {
+            text-align: left;
+            flex-shrink: 0;
         }
-        .status-processing {
-            background-color: #cce5ff;
-            color: #004085;
-        }
-        .status-pending {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-cancelled, .status-failed {
-            background-color: #f8d7da;
-            color: #721c24;
-        }
-        .status-refunded {
-            background-color: #e2e3f1;
-            color: #383d73;
-        }
-        .status-on-hold {
-            background-color: #fff3cd;
-            color: #856404;
-        }
-        .status-checkout-draft {
-            background-color: #f8f9fa;
-            color: #495057;
+        .company-stamp {
+            max-width: 150px;
+            max-height: 150px;
+            display: block;
         }
         .footer {
-            margin-top: 40px;
             text-align: center;
-            border-top: 1px solid #ddd;
-            padding-top: 20px;
-            color: #666;
+            color: #000;
             font-size: 12px;
+            flex: 1;
+            width: 100%;
         }
         .print-button {
             position: fixed;
             top: 20px;
             left: 20px;
-            background: #333;
-            color: white;
-            border: none;
+            background: #000;
+            color: #fff;
+            border: 1px solid #000;
             padding: 10px 20px;
-            border-radius: 5px;
             cursor: pointer;
             font-size: 14px;
         }
@@ -457,6 +424,18 @@ class APL_PDF_Generator {
         $status_class = 'status-' . $order_data['status'];
         $status_label = isset($status_labels[$order_data['status']]) ? $status_labels[$order_data['status']] : $order_data['status'];
         
+        // Get company stamp if uploaded
+        $stamp_id = get_option('apl_company_stamp');
+        $stamp_html = '';
+        if ($stamp_id) {
+            $stamp_url = wp_get_attachment_url($stamp_id);
+            if ($stamp_url) {
+                $stamp_html = '<div class="stamp-section">
+                    <img src="' . esc_url($stamp_url) . '" alt="مهر مجموعه" class="company-stamp" />
+                </div>';
+            }
+        }
+        
         $html = '<div class="invoice-container">
             <div class="header">
                 <h1>آزمایشگاه پوش</h1>
@@ -477,9 +456,7 @@ class APL_PDF_Generator {
                     </div>
                     <div class="detail-row">
                         <span class="detail-label">وضعیت:</span>
-                        <span class="detail-value">
-                            <span class="status-badge ' . $status_class . '">' . $status_label . '</span>
-                        </span>
+                        <span class="detail-value">' . $status_label . '</span>
                     </div>
                 </div>
                 
@@ -525,6 +502,19 @@ class APL_PDF_Generator {
             
             <div class="total-section">';
         
+        // Calculate subtotal (sum of all items)
+        $subtotal = 0;
+        foreach ($order_data['items'] as $item) {
+            $subtotal += $item['subtotal'];
+        }
+        
+        // Display subtotal
+        $html .= '
+                <div class="total-row">
+                    <span>جمع کل:</span>
+                    <span>' . $this->format_price($subtotal) . ' ' . $order_data['currency_symbol'] . '</span>
+                </div>';
+        
         // Display insurance fee if exists
         if (isset($order_data['insurance_fee']) && $order_data['insurance_fee'] > 0) {
             $html .= '
@@ -536,14 +526,17 @@ class APL_PDF_Generator {
         
         $html .= '
                 <div class="total-row final">
-                    <span>مبلغ کل:</span>
+                    <span>قابل پرداخت:</span>
                     <span>' . $this->format_price($order_data['total']) . ' ' . $order_data['currency_symbol'] . '</span>
                 </div>
             </div>
             
-            <div class="footer">
-                <p>با تشکر از انتخاب شما</p>
-                <p>آزمایشگاه پوش - ارائه خدمات آزمایشگاهی با کیفیت</p>
+            <div class="footer-wrapper">
+                ' . $stamp_html . '
+                <div class="footer">
+                    <p>با تشکر از انتخاب شما</p>
+                    <p>آزمایشگاه پوش - ارائه خدمات آزمایشگاهی با کیفیت</p>
+                </div>
             </div>
         </div>';
         

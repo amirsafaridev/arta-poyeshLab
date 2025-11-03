@@ -49,6 +49,11 @@ class APL_Ajax_Handlers {
         add_action('wp_ajax_nopriv_apl_create_order', array($this, 'create_order'));
         
         add_action('wp_ajax_apl_add_insurance_fee', array($this, 'add_insurance_fee'));
+        
+        add_action('wp_ajax_apl_get_user_test_results', array($this, 'get_user_test_results'));
+        add_action('wp_ajax_apl_mark_test_result_seen', array($this, 'mark_test_result_seen'));
+        add_action('wp_ajax_apl_get_unseen_test_results_count', array($this, 'get_unseen_test_results_count'));
+        add_action('wp_ajax_apl_get_recent_activities', array($this, 'get_recent_activities'));
     }
     
     /**
@@ -1445,6 +1450,380 @@ class APL_Ajax_Handlers {
             'message' => 'حق بیمه به مبلغ ' . number_format($amount) . ' تومان به سفارش اضافه شد.',
             'order_id' => $order_id
         ));
+    }
+    
+    /**
+     * Get user test results for dashboard
+     */
+    public function get_user_test_results() {
+        // Ensure APL_Gregorian_Jalali class is loaded
+        if (!class_exists('APL_Gregorian_Jalali')) {
+            require_once ARTA_POYESHLAB_PLUGIN_DIR . 'include/classes/apl-gregorian_jalali.php';
+        }
+        
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'کاربر وارد نشده است'));
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'apl_dashboard_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        try {
+            $current_user = wp_get_current_user();
+            $user_id = $current_user->ID;
+            
+            // Get all published lab test results
+            $test_results = get_posts(array(
+                'post_type' => 'apl_lab_test_result',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'meta_query' => array(
+                    array(
+                        'key' => '_apl_related_order_id',
+                        'compare' => 'EXISTS'
+                    )
+                )
+            ));
+            
+            $user_test_results = array();
+            $unseen_results = array();
+            
+            // Function to convert date to Jalali
+            if (!function_exists('convert_to_jalali_persian_helper')) {
+                function convert_to_jalali_persian_helper($date_string) {
+                    if (empty($date_string)) return '';
+                    
+                    $timestamp = strtotime($date_string);
+                    if (!$timestamp) return '';
+                    
+                    $year = date('Y', $timestamp);
+                    $month = date('m', $timestamp);
+                    $day = date('d', $timestamp);
+                    
+                    if (class_exists('\APL_Gregorian_Jalali')) {
+                        $jalali = \APL_Gregorian_Jalali::gregorian_to_jalali($year, $month, $day, false);
+                        if (is_array($jalali) && count($jalali) === 3) {
+                            $j_year = $jalali[0];
+                            $j_month = $jalali[1];
+                            $j_day = $jalali[2];
+                            
+                            $persian_months = array(
+                                1 => 'فروردین', 2 => 'اردیبهشت', 3 => 'خرداد', 4 => 'تیر',
+                                5 => 'مرداد', 6 => 'شهریور', 7 => 'مهر', 8 => 'آبان',
+                                9 => 'آذر', 10 => 'دی', 11 => 'بهمن', 12 => 'اسفند'
+                            );
+                            
+                            $month_name = isset($persian_months[$j_month]) ? $persian_months[$j_month] : $j_month;
+                            return $j_day . ' ' . $month_name . ' ' . $j_year;
+                        }
+                    }
+                    
+                    return '';
+                }
+            }
+            
+            // Filter test results that belong to user's orders
+            foreach ($test_results as $test_result) {
+                $related_order_id = get_post_meta($test_result->ID, '_apl_related_order_id', true);
+                
+                if ($related_order_id) {
+                    $order = wc_get_order($related_order_id);
+                    
+                    // Check if order exists and belongs to current user
+                    if ($order && $order->get_customer_id() == $user_id) {
+                        $test_result_file = get_post_meta($test_result->ID, '_apl_test_result_file', true);
+                        $is_seen = get_post_meta($test_result->ID, '_apl_test_result_seen', true) === '1';
+                        
+                        // Get dates
+                        $test_result_post = get_post($test_result->ID);
+                        $order_date = $order->get_date_created();
+                        $test_result_date = $test_result_post ? $test_result_post->post_date : '';
+                        $display_date = '';
+                        
+                        if ($test_result_date) {
+                            $display_date = convert_to_jalali_persian_helper($test_result_date);
+                        } elseif ($order_date) {
+                            $display_date = convert_to_jalali_persian_helper($order_date->date('Y-m-d H:i:s'));
+                        }
+                        
+                        // Order status info
+                        $order_status = $order->get_status();
+                        $status_labels = array(
+                            'completed' => array('bg' => 'bg-green-100', 'text' => 'text-green-800', 'label' => 'تکمیل شده'),
+                            'processing' => array('bg' => 'bg-blue-100', 'text' => 'text-blue-800', 'label' => 'در حال انجام'),
+                            'on-hold' => array('bg' => 'bg-yellow-100', 'text' => 'text-yellow-800', 'label' => 'در انتظار بررسی'),
+                            'cancelled' => array('bg' => 'bg-red-100', 'text' => 'text-red-800', 'label' => 'لغو شده'),
+                            'refunded' => array('bg' => 'bg-gray-100', 'text' => 'text-gray-800', 'label' => 'بازگشت داده شده'),
+                            'failed' => array('bg' => 'bg-red-100', 'text' => 'text-red-800', 'label' => 'ناموفق')
+                        );
+                        $status_info = isset($status_labels[$order_status]) ? $status_labels[$order_status] : array('bg' => 'bg-gray-100', 'text' => 'text-gray-800', 'label' => ucfirst($order_status));
+                        
+                        $has_file = !empty($test_result_file) && isset($test_result_file['url']);
+                        
+                        $result_data = array(
+                            'test_result_id' => $test_result->ID,
+                            'test_result_title' => $test_result_post && $test_result_post->post_title ? $test_result_post->post_title : sprintf('جواب آزمایش - سفارش #%s', $order->get_order_number()),
+                            'order_id' => $related_order_id,
+                            'order_number' => $order->get_order_number(),
+                            'order_status' => $order_status,
+                            'status_info' => $status_info,
+                            'has_file' => $has_file,
+                            'file_url' => $has_file ? $test_result_file['url'] : '',
+                            'file_name' => $has_file && isset($test_result_file['name']) ? $test_result_file['name'] : '',
+                            'file_size' => $has_file && isset($test_result_file['size']) ? $test_result_file['size'] : '',
+                            'date' => $display_date,
+                            'is_seen' => $is_seen
+                        );
+                        
+                        $user_test_results[] = $result_data;
+                        
+                        // Add to unseen if not seen
+                        if (!$is_seen && $has_file) {
+                            $unseen_results[] = $result_data;
+                        }
+                    }
+                }
+            }
+            
+            // Sort by date (newest first)
+            usort($user_test_results, function($a, $b) {
+                return strcmp($b['test_result_id'], $a['test_result_id']);
+            });
+            
+            // Get unseen count before marking as seen
+            $unseen_count = count($unseen_results);
+            
+            // Mark unseen results as seen
+            foreach ($unseen_results as $unseen_result) {
+                update_post_meta($unseen_result['test_result_id'], '_apl_test_result_seen', '1');
+            }
+            
+            wp_send_json_success(array(
+                'test_results' => $user_test_results,
+                'unseen_count' => $unseen_count
+            ));
+            
+        } catch (\Exception $e) {
+            wp_send_json_error(array(
+                'message' => 'خطا در دریافت نتایج آزمایش: ' . $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Mark test result as seen
+     */
+    public function mark_test_result_seen() {
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'کاربر وارد نشده است'));
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'apl_dashboard_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        $test_result_id = isset($_POST['test_result_id']) ? intval($_POST['test_result_id']) : 0;
+        
+        if ($test_result_id <= 0) {
+            wp_send_json_error(array('message' => 'شناسه جواب آزمایش نامعتبر است'));
+        }
+        
+        // Check if test result belongs to user
+        $test_result = get_post($test_result_id);
+        if (!$test_result || $test_result->post_type !== 'apl_lab_test_result') {
+            wp_send_json_error(array('message' => 'جواب آزمایش یافت نشد'));
+        }
+        
+        $related_order_id = get_post_meta($test_result_id, '_apl_related_order_id', true);
+        if ($related_order_id) {
+            $order = wc_get_order($related_order_id);
+            $current_user = wp_get_current_user();
+            
+            if (!$order || $order->get_customer_id() != $current_user->ID) {
+                wp_send_json_error(array('message' => 'شما دسترسی به این جواب آزمایش ندارید'));
+            }
+        }
+        
+        // Mark as seen
+        update_post_meta($test_result_id, '_apl_test_result_seen', '1');
+        
+        wp_send_json_success(array(
+            'message' => 'جواب آزمایش به عنوان مشاهده شده علامت‌گذاری شد'
+        ));
+    }
+    
+    /**
+     * Get unseen test results count (without marking as seen)
+     */
+    public function get_unseen_test_results_count() {
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'کاربر وارد نشده است'));
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'apl_dashboard_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        try {
+            $current_user = wp_get_current_user();
+            $user_id = $current_user->ID;
+            
+            // Get all published lab test results
+            $test_results = get_posts(array(
+                'post_type' => 'apl_lab_test_result',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'meta_query' => array(
+                    array(
+                        'key' => '_apl_related_order_id',
+                        'compare' => 'EXISTS'
+                    )
+                )
+            ));
+            
+            $unseen_count = 0;
+            
+            // Count unseen test results that belong to user's orders and have files
+            foreach ($test_results as $test_result) {
+                $related_order_id = get_post_meta($test_result->ID, '_apl_related_order_id', true);
+                
+                if ($related_order_id) {
+                    $order = wc_get_order($related_order_id);
+                    
+                    // Check if order exists and belongs to current user
+                    if ($order && $order->get_customer_id() == $user_id) {
+                        $test_result_file = get_post_meta($test_result->ID, '_apl_test_result_file', true);
+                        $is_seen = get_post_meta($test_result->ID, '_apl_test_result_seen', true) === '1';
+                        $has_file = !empty($test_result_file) && isset($test_result_file['url']);
+                        
+                        // Count only if not seen and has file
+                        if (!$is_seen && $has_file) {
+                            $unseen_count++;
+                        }
+                    }
+                }
+            }
+            
+            wp_send_json_success(array(
+                'unseen_count' => $unseen_count
+            ));
+            
+        } catch (\Exception $e) {
+            wp_send_json_error(array(
+                'message' => 'خطا در دریافت تعداد نتایج آزمایش: ' . $e->getMessage()
+            ));
+        }
+    }
+    
+    /**
+     * Get recent activities for dashboard
+     */
+    public function get_recent_activities() {
+        // Ensure APL_Gregorian_Jalali class is loaded
+        if (!class_exists('APL_Gregorian_Jalali')) {
+            require_once ARTA_POYESHLAB_PLUGIN_DIR . 'include/classes/apl-gregorian_jalali.php';
+        }
+        
+        // Check if user is logged in
+        if (!is_user_logged_in()) {
+            wp_send_json_error(array('message' => 'کاربر وارد نشده است'));
+        }
+        
+        // Verify nonce
+        if (!wp_verify_nonce($_POST['nonce'], 'apl_dashboard_nonce')) {
+            wp_send_json_error(array('message' => 'Security check failed'));
+        }
+        
+        try {
+            $current_user = wp_get_current_user();
+            $user_id = $current_user->ID;
+            
+            $activities = array();
+            
+            // Get recent orders (last 5 only)
+            $orders = wc_get_orders(array(
+                'customer_id' => $user_id,
+                'limit' => 5,
+                'orderby' => 'date',
+                'order' => 'DESC'
+            ));
+            
+            foreach ($orders as $order) {
+                $order_date = $order->get_date_created();
+                $order_timestamp = $order_date->getTimestamp();
+                
+                // Check if order has test results first (most important)
+                $test_results = get_posts(array(
+                    'post_type' => 'apl_lab_test_result',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 1,
+                    'meta_query' => array(
+                        array(
+                            'key' => '_apl_related_order_id',
+                            'value' => $order->get_id(),
+                            'compare' => '='
+                        )
+                    )
+                ));
+                
+                // Priority: Test result > Order creation
+                if (!empty($test_results)) {
+                    $test_result = $test_results[0];
+                    $test_result_file = get_post_meta($test_result->ID, '_apl_test_result_file', true);
+                    $has_file = !empty($test_result_file) && isset($test_result_file['url']);
+                    
+                    if ($has_file) {
+                        $activities[] = array(
+                            'type' => 'test_result_ready',
+                            'order_id' => $order->get_id(),
+                            'order_number' => $order->get_order_number(),
+                            'title' => sprintf('آزمایش #%s تکمیل شد', $order->get_order_number()),
+                            'description' => 'نتایج برای دانلود آماده است',
+                            'timestamp' => strtotime($test_result->post_date),
+                            'icon' => 'check',
+                            'icon_color' => 'green'
+                        );
+                        continue; // Skip order creation activity if test result exists
+                    }
+                }
+                
+                // Add order creation activity if no test result
+                $activities[] = array(
+                    'type' => 'order_created',
+                    'order_id' => $order->get_id(),
+                    'order_number' => $order->get_order_number(),
+                    'title' => sprintf('سفارش #%s ثبت شد', $order->get_order_number()),
+                    'description' => 'سفارش شما با موفقیت ثبت شد',
+                    'timestamp' => $order_timestamp,
+                    'icon' => 'shopping-cart',
+                    'icon_color' => 'blue'
+                );
+            }
+            
+            // Sort activities by timestamp (newest first)
+            usort($activities, function($a, $b) {
+                return $b['timestamp'] - $a['timestamp'];
+            });
+            
+            // Limit to 5 most recent activities
+            $activities = array_slice($activities, 0, 5);
+            
+            wp_send_json_success(array(
+                'activities' => $activities
+            ));
+            
+        } catch (\Exception $e) {
+            wp_send_json_error(array(
+                'message' => 'خطا در دریافت فعالیت‌های اخیر: ' . $e->getMessage()
+            ));
+        }
     }
 }
 

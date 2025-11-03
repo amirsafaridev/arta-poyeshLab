@@ -153,7 +153,7 @@
                             <span class="text-gray-700 font-medium text-sm"><?php echo esc_html($user_display_name); ?></span>
                         </div>
                         <button onclick="logout()" class="hidden sm:block text-gray-400 hover:text-gray-600 p-1 sm:p-2">
-                            <i class="fas fa-sign-out-alt text-sm sm:text-base"></i>
+                            <i class="fas fa-sign-out-alt text-sm sm:text-base" style="transform: rotate(180deg);"></i>
                         </button>
                         <!-- Mobile Hamburger Menu Button -->
                         <button onclick="toggleMobileMenu()" class="lg:hidden p-2 text-gray-600 hover:text-gray-900">
@@ -278,19 +278,19 @@
                     <!-- Dashboard Overview -->
                     <div id="overviewSection" class="section">
                         <div class="mb-8">
-                            <h2 class="text-2xl font-bold text-gray-900 mb-2">خوش آمدید سارا!</h2>
+                            <h2 class="text-2xl font-bold text-gray-900 mb-2">خوش آمدید <?php echo esc_html($user_display_name); ?>!</h2>
                             <p class="text-gray-600">در اینجا آخرین وضعیت سلامت شما را مشاهده کنید.</p>
                         </div>
 
-                        <!-- Notification Banner -->
-                        <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                        <!-- Notification Banner for Unseen Test Results -->
+                        <div id="testResultsNotification" class="hidden bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
                             <div class="flex items-center">
                                 <i class="fas fa-check-circle text-green-600 ml-3"></i>
                                 <div class="flex-1">
-                                    <p class="text-green-800 font-medium">نتایج آزمایش #25360 شما آماده است!</p>
+                                    <p id="testResultsNotificationText" class="text-green-800 font-medium"></p>
                                     <p class="text-green-700 text-sm">برای دانلود گزارش کامل اینجا کلیک کنید.</p>
                                 </div>
-                                <button class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
+                                <button onclick="showSection('results')" class="bg-green-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-green-700">
                                     مشاهده نتایج
                                 </button>
                             </div>
@@ -334,31 +334,18 @@
                         <!-- Recent Activity -->
                         <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
                             <h3 class="text-lg font-semibold text-gray-900 mb-4">فعالیت‌های اخیر</h3>
-                            <div class="space-y-4">
-                                <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-green-100 rounded-full flex items-center justify-center ml-4">
-                                            <i class="fas fa-check text-green-600"></i>
-                                        </div>
-                                        <div>
-                                            <p class="font-medium text-gray-900">آزمایش #25360 تکمیل شد</p>
-                                            <p class="text-gray-600 text-sm">نتایج برای دانلود آماده است</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-gray-500 text-sm">۲ ساعت پیش</span>
+                            <div id="recentActivitiesContainer" class="space-y-4">
+                                <!-- Loading state -->
+                                <div id="recentActivitiesLoading" class="text-center py-8">
+                                    <i class="fas fa-spinner fa-spin text-gray-400 text-2xl mb-2"></i>
+                                    <p class="text-gray-500 text-sm">در حال بارگذاری...</p>
                                 </div>
-                                <div class="flex items-center justify-between py-3 border-b border-gray-100">
-                                    <div class="flex items-center">
-                                        <div class="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center ml-4">
-                                            <i class="fas fa-calendar text-blue-600"></i>
-                                        </div>
-                                        <div>
-                                            <p class="font-medium text-gray-900">قرار ملاقات برنامه‌ریزی شد</p>
-                                            <p class="text-gray-600 text-sm">رادیولوژی برای فردا برنامه‌ریزی شده</p>
-                                        </div>
-                                    </div>
-                                    <span class="text-gray-500 text-sm">۱ روز پیش</span>
+                                <!-- Empty state -->
+                                <div id="recentActivitiesEmpty" class="hidden text-center py-8">
+                                    <i class="fas fa-inbox text-gray-300 text-3xl mb-3"></i>
+                                    <p class="text-gray-500 text-sm">فعالیت اخیری وجود ندارد</p>
                                 </div>
+                                <!-- Activities will be rendered here -->
                             </div>
                         </div>
                     </div>
@@ -1095,75 +1082,26 @@
                             <p class="text-gray-600">نتایج آزمایش‌های آزمایشگاهی خود را دانلود و مشاهده کنید.</p>
                         </div>
 
-                        <div class="space-y-4">
-                            <!-- Result Card 1 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center ml-4">
-                                            <i class="fas fa-file-medical-alt text-green-600 text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900">آزمایش #25361</h3>
-                                            <p class="text-gray-600">تکمیل شده در ۱۹ آذر ۱۴۰۳</p>
-                                            <span class="inline-block mt-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                                نتایج آماده است
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 lg:mt-0">
-                                        <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                                            <i class="fas fa-download ml-2"></i>دانلود PDF
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Loading State -->
+                        <div id="testResultsLoading" class="flex justify-center items-center py-12">
+                            <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                            <span class="mr-3 text-gray-600">در حال بارگذاری...</span>
+                        </div>
 
-                            <!-- Result Card 2 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center ml-4">
-                                            <i class="fas fa-file-medical-alt text-green-600 text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900">آزمایش #25360</h3>
-                                            <p class="text-gray-600">تکمیل شده در ۱۴ آذر ۱۴۰۳</p>
-                                            <span class="inline-block mt-1 px-3 py-1 bg-green-100 text-green-800 text-xs font-medium rounded-full">
-                                                نتایج آماده است
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 lg:mt-0">
-                                        <button class="bg-blue-600 text-white px-6 py-3 rounded-lg hover:bg-blue-700 transition duration-200 font-medium">
-                                            <i class="fas fa-download ml-2"></i>دانلود PDF
-                                        </button>
-                                    </div>
+                        <!-- Empty State -->
+                        <div id="testResultsEmpty" class="hidden text-center py-12">
+                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-8">
+                                <div class="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-file-medical-alt text-gray-400 text-2xl"></i>
                                 </div>
+                                <h3 class="text-lg font-semibold text-gray-900 mb-2">نتیجه آزمایشی یافت نشد</h3>
+                                <p class="text-gray-600">هنوز نتیجه آزمایشی برای شما منتشر نشده است.</p>
                             </div>
+                        </div>
 
-                            <!-- Result Card 3 -->
-                            <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                                <div class="flex flex-col lg:flex-row lg:items-center justify-between">
-                                    <div class="flex items-center">
-                                        <div class="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center ml-4">
-                                            <i class="fas fa-clock text-orange-600 text-xl"></i>
-                                        </div>
-                                        <div>
-                                            <h3 class="text-lg font-semibold text-gray-900">آزمایش #25360</h3>
-                                            <p class="text-gray-600">آزمایش در حال انجام - ۲۴ آذر ۱۴۰۳</p>
-                                            <span class="inline-block mt-1 px-3 py-1 bg-orange-100 text-orange-800 text-xs font-medium rounded-full">
-                                                در حال پردازش
-                                            </span>
-                                        </div>
-                                    </div>
-                                    <div class="mt-4 lg:mt-0">
-                                        <button disabled class="bg-gray-300 text-gray-500 px-6 py-3 rounded-lg cursor-not-allowed font-medium">
-                                            <i class="fas fa-hourglass-half ml-2"></i>هنوز آماده نیست
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                        <!-- Test Results Container -->
+                        <div id="testResultsContainer" class="hidden space-y-4">
+                            <!-- Dynamic test result cards will be inserted here via JavaScript -->
                         </div>
                     </div>
 
