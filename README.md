@@ -1,298 +1,309 @@
-# Arta PoyeshLab - WordPress SMS Authentication Plugin
+## Arta PoyeshLab – WooCommerce Lab Portal & Patient Dashboard
 
-Arta PoyeshLab is a production-ready WordPress plugin that adds a complete, SMS-based authentication layer on top of the native WordPress user system. It is designed for portals (for example, lab or customer portals) where users sign in with their mobile number and a one-time password (OTP) instead of a traditional username/password.
+Arta PoyeshLab is a **WordPress + WooCommerce extension** that turns a standard store into a **patient-facing lab portal** for medical laboratories.  
+It provides OTP-based authentication, appointment scheduling, lab test result delivery, and rich order metadata tailored for diagnostic workflows, all on top of WooCommerce orders and products.
 
-The plugin ships with a fully integrated front-end flow (`/lab-portal`), an admin settings panel, and an internal logging/monitoring system, so you can drop it into an existing WordPress installation and get a secure SMS login experience out of the box.
-
-## 💡 What This Plugin Adds to WordPress
-
-- **Passwordless SMS Authentication Flow**: Replaces the classic username/password experience (for the portal area) with an OTP-over-SMS login and registration flow based on mobile numbers.
-- **Dedicated Portal Endpoint**: Exposes a ready-to-use entry point at `/lab-portal` backed by custom templates for authentication and a user dashboard.
-- **Custom Admin Menu & Settings Pages**: Adds an `Arta PoyeshLab` menu in the WordPress admin with separate screens for SMS configuration, UI customization, and system logs.
-- **Centralized Logging Layer**: Persists the last 50 important events (OTP sends, logins, registrations, verifications) in WordPress, with an admin UI for inspection and maintenance.
-- **Controlled OTP Lifecycle**: Implements OTP generation, storage, expiration, and attempt limiting, abstracted away from theme code.
-- **Production-focused DX**: Includes a test SMS code (`939393`) and a built-in connection test panel to simplify local development and staging.
-
-## 🧱 Architecture & Technical Overview
-
-- **Modular OOP Structure**  
-  - `apl-main.php` boots the plugin and wires together the core services.  
-  - Dedicated classes for each concern (`apl-sms-handler.php`, `apl-auth.php`, `apl-logger.php`, `apl-admin-settings.php`, `apl-ajax-handlers.php`, `apl-cron.php`, `apl-my-account.php`) keep responsibilities separated and easier to maintain.
-
-- **OTP Workflow & Storage**  
-  - OTP codes are generated and stored in the WordPress options table (`wp_options`) along with metadata such as expiration timestamp and attempt count.  
-  - Codes automatically expire after 2 minutes and are rejected after 3 failed attempts, reducing the attack surface for brute-force guessing.
-
-- **Logging Subsystem**  
-  - A dedicated logger service (`apl-logger.php`) records the last 50 significant events.  
-  - Logs are stored in WordPress and surfaced in a custom admin screen, making it easy to debug SMS delivery issues and authentication flows in production.
-
-- **Asynchronous UX with AJAX**  
-  - AJAX handlers (`apl-ajax-handlers.php`) are used for actions such as sending OTPs and validating codes, so users don't have to experience full page reloads during the authentication flow.
-
-- **Template & Theme Isolation**  
-  - All front-end pieces for the portal live under `include/template/` (`layout.php`, `auth.php`, `dashbord.php`), keeping plugin logic and theme presentation separate and making it easier to customize or override templates.
-
-- **Security-Oriented Defaults**  
-  - Short-lived OTP codes and strict attempt limits.  
-  - WordPress-native session handling for authenticated users.  
-  - Centralized validation and sanitization inside the auth and SMS handler classes.  
-  - Clear separation between public-facing endpoints and privileged admin actions.
-
-## 🚀 Features
-
-### 🔐 Authentication System
-- **Mobile-based Login & Registration**: Seamless authentication using mobile phone numbers
-- **SMS OTP Verification**: Secure two-factor authentication via SMS codes
-- **Test Mode Support**: Built-in test code "939393" for development and testing
-- **WordPress Session Management**: Native WordPress session handling for secure user sessions
-
-### 📱 SMS Gateway Integration
-- **MeliPayamak API Integration**: Direct integration with MeliPayamak SMS service
-- **OTP Code Storage**: Secure storage of OTP codes in WordPress options table
-- **Auto-expiration**: Automatic code expiration after 2 minutes
-- **Attempt Limiting**: Maximum 3 verification attempts per OTP code
-
-### 📊 Logging System
-- **Activity Logging**: Tracks the last 50 system activities
-- **Multiple Log Types**: SMS sending, login attempts, registrations, code verifications
-- **Admin Dashboard**: View statistics and logs in WordPress admin panel
-- **Log Management**: Clear logs functionality for maintenance
-
-### ⚙️ Admin Settings Panel
-- **SMS Gateway Configuration**: Configure MeliPayamak credentials (username, password, sender number)
-- **Login Page Customization**: Upload logo and customize login page texts
-- **Log Viewer**: Monitor and manage system logs
-- **Connection Testing**: Test SMS gateway connectivity directly from admin panel
-
-### 🎨 User Interface
-- **Responsive Design**: Built with Tailwind CSS for modern, responsive layouts
-- **RTL Support**: Full support for Persian/Farsi and right-to-left languages
-- **Smooth Animations**: Enhanced user experience with fluid transitions
-- **Mobile Optimized**: Fully responsive design for all device sizes
-
-## 📋 Requirements
-
-- WordPress 5.0 or higher
-- PHP 7.4 or higher
-- Active MeliPayamak account with API access
-- WordPress admin access for configuration
-
-## ⚙️ Configuration
-
-### Initial Setup
-
-1. **Access Plugin Settings**
-   - Navigate to **"Arta PoyeshLab"** menu in WordPress admin sidebar
-
-2. **Configure SMS Gateway**
-   - Enter your MeliPayamak credentials:
-     - **Username**: Your MeliPayamak panel username
-     - **Password**: Your MeliPayamak panel password
-     - **Sender Number**: Your approved sender number
-   - Click **"Test Connection"** to verify settings
-
-3. **Customize Login Page**
-   - Upload your logo image
-   - Customize login page texts and messages
-   - Save changes
-
-4. **Test the System**
-   - Visit `/lab-portal` on your WordPress site
-   - Test registration or login process
-   - Use test code `939393` for development testing
-
-## 📖 Usage
-
-### For End Users
-
-1. **Access Portal**
-   - Navigate to `/lab-portal` on your website
-
-2. **Registration Process**
-   - Enter your personal information
-   - Receive verification code via SMS
-   - Enter the 6-digit code to complete registration
-
-3. **Login Process**
-   - Enter your mobile phone number
-   - Receive verification code via SMS
-   - Enter the 6-digit code to access your account
-
-### For Administrators
-
-1. **Monitor System**
-   - View system logs in **"Arta PoyeshLab → System Logs"**
-   - Check SMS sending statistics
-   - Monitor authentication attempts
-
-2. **Manage Settings**
-   - Update SMS gateway credentials
-   - Customize login page appearance
-   - Clear system logs when needed
-
-## 📁 File Structure
-
-```
-arta-poyeshLab/
-├── arta-poyeshLab.php              # Main plugin file
-├── include/
-│   ├── apl-main.php                # Core plugin class
-│   ├── function.php                # Helper functions
-│   ├── classes/
-│   │   ├── apl-sms-handler.php     # SMS handler class
-│   │   ├── apl-logger.php          # Logging system class
-│   │   ├── apl-admin-settings.php  # Admin settings class
-│   │   ├── apl-ajax-handlers.php   # AJAX request handlers
-│   │   ├── apl-auth.php            # Authentication class
-│   │   ├── apl-cron.php            # Scheduled tasks handler
-│   │   └── apl-my-account.php      # User account management
-│   └── template/
-│       ├── layout.php              # Main template layout
-│       ├── auth.php                # Login/Registration page
-│       └── dashbord.php            # User dashboard
-└── assets/
-    ├── css/
-    │   └── style.css               # Custom styles
-    └── js/
-        └── script.js               # JavaScript functionality
-```
-
-## 🔧 Advanced Configuration
-
-### Customize OTP Expiration Time
-
-Edit `include/classes/apl-sms-handler.php`:
-
-```php
-'expires' => time() + 120, // 2 minutes (120 seconds)
-```
-
-Change the value to adjust expiration time in seconds.
-
-### Modify Log Retention
-
-Edit `include/classes/apl-logger.php`:
-
-```php
-private $max_logs = 50; // Number of logs to retain
-```
-
-Adjust the value to change how many logs are stored.
-
-### Change OTP Attempt Limit
-
-Edit `include/classes/apl-sms-handler.php`:
-
-```php
-if ($otp_data['attempts'] >= 3) { // Maximum 3 attempts
-```
-
-Modify the number to change the maximum verification attempts.
-
-## 🐛 Troubleshooting
-
-### SMS Not Sending
-
-1. **Verify SMS Gateway Settings**
-   - Check MeliPayamak credentials in admin panel
-   - Ensure sender number is approved and active
-   - Verify account balance
-
-2. **Test Connection**
-   - Use the "Test Connection" feature in admin panel
-   - Check system logs for error messages
-
-3. **Check System Logs**
-   - Review logs in **"Arta PoyeshLab → System Logs"**
-   - Look for SMS sending errors or API failures
-
-### Login Issues
-
-1. **User Verification**
-   - Ensure user exists in WordPress database
-   - Check user meta data for mobile number
-
-2. **OTP Code Issues**
-   - Verify OTP code hasn't expired (2-minute window)
-   - Check if maximum attempts (3) haven't been exceeded
-   - Use test code `939393` for testing
-
-3. **Session Problems**
-   - Clear browser cookies and cache
-   - Check WordPress session configuration
-
-### Display Problems
-
-1. **Plugin Activation**
-   - Verify plugin is activated in WordPress admin
-   - Check for plugin conflicts with other plugins
-
-2. **Asset Loading**
-   - Ensure CSS and JS files are loading correctly
-   - Check browser console for JavaScript errors
-   - Verify file permissions (should be 644 for files, 755 for directories)
-
-3. **Template Issues**
-   - Clear WordPress cache if using caching plugins
-   - Check theme compatibility
-
-## 🔒 Security Considerations
-
-- OTP codes expire after 2 minutes
-- Maximum 3 verification attempts per code
-- Secure storage of OTP data in WordPress options
-- WordPress native session management
-- Input validation and sanitization
-- Protection against brute force attacks
-
-## 🌐 Browser Support
-
-- Chrome (latest)
-- Firefox (latest)
-- Safari (latest)
-- Edge (latest)
-- Mobile browsers (iOS Safari, Chrome Mobile)
-
-## 📝 Changelog
-
-### Version 1.0.0
-- Initial release
-- SMS authentication system
-- Admin settings panel
-- Logging system
-- Responsive UI with Tailwind CSS
-
-## 🤝 Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
-
-## 📄 License
-
-This plugin is licensed under the **GPL v2 or later**.
-
-```
-Copyright (C) 2024 Arta PoyeshLab
-
-This program is free software; you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation; either version 2 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-```
-
-## 👨‍💻 Author
-
-**Arta PoyeshLab Development Team**
-
-## 📧 Support
-
-For support, bug reports, or feature requests, please open an issue on GitHub or contact the development team.
+This plugin was built as a **real-world production solution** for a medical lab in Iran, with full support for **Jalali dates**, **Persian UI**, and a custom **/lab-portal** single-page experience.
 
 ---
 
-**Made with ❤️ for the WordPress community**
+### Features
+
+- **Patient portal at `/lab-portal`**
+  - Dedicated lab dashboard that routes all requests through a custom layout template.
+  - Tailwind-powered, mobile-friendly UI for login, registration, profile and orders.
+  - Switches between the **auth screen** and **dashboard** depending on login state.
+
+- **OTP-based login & registration (SMS)**
+  - Passwordless authentication using **one-time passwords (OTP)** sent via SMS.
+  - Separate AJAX flows for:
+    - **Login** (`apl_send_login_otp`, `apl_verify_login_otp`).
+    - **Registration** (`apl_send_register_otp`, `apl_verify_register_otp`).
+  - OTP generation, storage, expiration and attempt limits are handled server-side.
+  - Security hardening via nonces and detailed logging of login and OTP activity.
+
+- **National Payamak SMS gateway integration**
+  - Pluggable SMS layer (`APL_SMS_Handler`) talking to **rest.payamak-panel.com**.
+  - Centralized settings for username, password and sender number.
+  - Reusable helpers for:
+    - Generating and persisting OTP codes.
+    - Verifying OTPs with expiry & attempt limits.
+    - Sending arbitrary SMS messages when needed.
+
+- **Jalali date support**
+  - Custom `APL_Gregorian_Jalali` helper for bidirectional conversion between **Gregorian** and **Jalali**.
+  - All user-facing dates in the portal (orders, appointments, invoices) are rendered in Jalali.
+  - Back‑office logic (DB queries, WooCommerce internals) continue to use Gregorian dates.
+
+- **Appointment management module**
+  - Custom DB table (`wp_apl_appointments`) managed by `APL_Appointments`.
+  - Admin UI for:
+    - Defining **time slots** in bulk across date ranges.
+    - Filtering by status (available, booked, completed, cancelled).
+    - Filtering by **service delivery method** (home sampling, lab visit, sample shipping) and Jalali month.
+    - Inline edit and bulk delete for available slots.
+  - Persian datepicker integration for a localized scheduling experience.
+  - Front-end AJAX to fetch **available hours per day** and service method.
+  - Orders created through the portal automatically **reserve** the chosen appointment slot.
+
+- **Lab test result workflow**
+  - Dedicated custom post type: `apl_lab_test_result`.
+  - Admin interface for:
+    - Selecting the **related WooCommerce order** with a searchable dropdown.
+    - Uploading **single lab result file** (PDF/image/any document) via drag‑and‑drop.
+    - Managing storage in a dedicated uploads subdirectory with directory hardening.
+  - Dashboard integration:
+    - Patients see a list of their lab results mapped back from orders.
+    - Unseen results are tracked and can be counted or marked as seen.
+    - Files are downloadable only for the owning customer.
+
+- **PDF invoice generation (in Persian, with Jalali date)**
+  - `APL_PDF_Generator` builds a **printable Farsi invoice** for WooCommerce orders.
+  - Order date converted to Jalali and displayed in the header.
+  - Line items, totals, and optional **insurance fee** are included.
+  - Supports an optional **company stamp** image (configured from admin settings).
+  - Secure access via a signed URL with a nonce; only the logged-in order owner can view their invoice.
+
+- **Extended product metadata for lab workflows**
+  - Per-product fields for:
+    - **Product type**: `lab_test` or `lab_package`.
+    - **Service delivery method**: home sampling / lab visit / sample shipping.
+  - For lab packages:
+    - Select included test products with **Select2**‑based multi-select.
+    - Dynamic, human‑readable summary of included tests in the product editor.
+  - Helper (`apl_get_lab_package_products`) exposes package data (pricing, delivery method, included tests) for use in the front-end portal.
+
+- **Rich order metadata (patient, appointment & insurance)**
+  - WooCommerce orders are extended with structured fields:
+    - Request type: upload prescription / electronic prescription / test packages.
+    - Delivery method & location (city, full address).
+    - Patient identity: first name, last name, national ID, mobile.
+    - Appointment date & time (stored in DB, rendered in Jalali).
+    - Basic & supplementary insurance info + tracking code.
+    - Applied discount code and electronic prescription data (national ID, doctor name).
+    - Prescription files uploaded at order time.
+  - All fields are visible and editable in the **WooCommerce admin** on the order edit screen.
+  - Dynamic show/hide behavior for fields based on request type and delivery method.
+
+- **Patient profile & media**
+  - Profile endpoint to update:
+    - First / last name.
+    - National ID.
+    - Email (if not already set).
+    - Mobile number (if not locked).
+    - Address.
+  - Validation with meaningful, field-specific error messages.
+  - Profile picture upload:
+    - Stores user avatars in `uploads/profile-pictures`.
+    - Resizes to 150×150 and cleans up the previous avatar file on update.
+
+- **Dashboard: orders, invoices, activities**
+  - Patient dashboard provides:
+    - Order list with Jalali dates, statuses and item summaries.
+    - Deep link to **invoice PDF** via secure URLs.
+    - Aggregated **recent activities** (order created, results ready, etc.).
+  - All dashboard data is served via AJAX handlers with nonce validation and per-user access control.
+
+- **Admin settings & observability**
+  - Central `APL_Admin_Settings` class exposes:
+    - **SMS settings** page (credentials, test SMS tool).
+    - **Login page branding** (logo, title, subtitle, terms text).
+    - **Order success message** with placeholders (e.g. `{order_number}`).
+    - **Company stamp** upload used in invoices.
+  - System logging via `APL_Logger`:
+    - Centralized log entries for SMS events, login attempts, registration, OTP validations and profile updates.
+    - Lightweight log viewer in the admin (with clear‑logs action).
+  - Background cleanup:
+    - `APL_Cron` schedules hourly jobs to clean expired OTP records.
+
+---
+
+### Architecture Overview
+
+- **Bootstrap & main loader**
+  - `arta-poyeshLab.php` defines plugin constants and includes `include/apl-main.php`.
+  - `APL_Main` checks for WooCommerce, loads all function and class files in a fixed order to avoid dependency issues, and registers asset loading for both frontend and admin.
+
+- **Core modules**
+  - `APL_Auth` – helpers around current user’s mobile, national ID and login state.
+  - `APL_Ajax_Handlers` – all front-end AJAX endpoints for auth, profile, orders, invoices, discounts, appointments and lab results.
+  - `APL_Appointments` – custom table, admin UI and AJAX for appointment management.
+  - `APL_Lab_Test_Results` – custom post type + file storage for lab results.
+  - `APL_PDF_Generator` – invoice HTML/PDF factory with Jalali dates and stamp.
+  - `APL_Product_Fields` – product-level metadata and admin UI for lab products.
+  - `APL_Order_Meta` – WooCommerce order meta fields & UI.
+  - `APL_SMS_Handler` – integration with National Payamak for OTP and SMS.
+  - `APL_Logger` – centralized system logger with simple stats.
+  - `APL_Cron` – schedules and clears OTP‑related data.
+  - `APL_My_Account` – rewrites `/lab-portal` requests to a custom template (`include/template/layout.php`).
+
+- **Presentation layer**
+  - `include/template/layout.php` – entry point that renders the full-screen lab portal layout and conditionally includes:
+    - `include/template/auth.php` (unauthenticated).
+    - `include/template/dashbord.php` (authenticated).
+  - `assets/css/style.css` and `assets/js/script.js` are enqueued both globally and inside the layout for a cohesive SPA-like experience.
+
+---
+
+### Requirements
+
+- **WordPress**: 5.8+ (tested on recent 5.x / 6.x)
+- **PHP**: 7.4+ (namespaces and modern syntax are used)
+- **WooCommerce**: 5.0+ (orders, products and coupons are assumed available)
+- **Database**: MySQL / MariaDB (WordPress standard)
+- **SMS provider**: Valid **National Payamak** account with REST credentials
+
+---
+
+### Installation
+
+- **1. Copy the plugin into your WordPress installation**
+  - Place this folder in `wp-content/plugins/arta-poyeshLab`.
+
+- **2. Activate the plugin**
+  - Go to `Plugins → Installed Plugins` and activate **Arta PoyeshLab**.
+
+- **3. Ensure WooCommerce is active**
+  - If WooCommerce is not installed or not active, the plugin will show an admin notice and gracefully disable its main functionality.
+
+- **4. (Optional but recommended) Create a “Lab Portal” page**
+  - Create a new page with slug `lab-portal` to provide a clean entry URL:
+    - URL will typically be `https://yourdomain.com/lab-portal`.
+  - The plugin internally intercepts that path and renders its own layout template.
+
+---
+
+### Configuration
+
+- **SMS settings**
+  - Go to the plugin’s admin menu (`آزمایشگاه پویش → تنظیمات پیامک`).
+  - Set:
+    - SMS **username**.
+    - SMS **password**.
+    - **From number** (sender line).
+  - Use the built‑in **“Test SMS”** box to verify connectivity to National Payamak.
+
+- **Branding & login screen**
+  - Under `آزمایشگاه پویش → تنظیمات اصلی` you can configure:
+    - Login **logo** (also used as favicon in the portal).
+    - Main title and subtitle.
+    - Terms & privacy text rendered beside the consent checkbox.
+    - Order success message, including placeholders like `{order_number}`.
+    - Optional **company stamp** image; this appears in the invoice footer.
+
+- **Appointments**
+  - Use the `نوبت‌ها` submenu to:
+    - Define date ranges in Jalali using the Persian datepicker.
+    - Define one or more time slots per day (hours and quarter-hour steps).
+    - Choose the **service delivery method** a slot belongs to.
+  - Appointments are stored in `wp_apl_appointments` and used when patients create orders via the portal.
+
+- **Products: tests & packages**
+  - Edit your WooCommerce products:
+    - Set **Product type** to “Lab Test” or “Lab Package”.
+    - Choose the **service delivery method** for that product.
+    - For lab packages, select which test products are included.
+  - The front-end portal can then:
+    - Present curated packages for patients.
+    - Show which tests are bundled inside each package.
+
+- **Order meta in WooCommerce admin**
+  - When editing an order, you will see additional sections for:
+    - Request type and delivery method.
+    - Patient identity & contact information.
+    - Appointment date & time, address and city (for home sampling).
+    - Insurance fields and discount code.
+    - Any uploaded prescription files (linked as downloadable URLs).
+
+- **Lab test results**
+  - In the admin menu, use the `جواب آزمایش‌ها` custom post type:
+    - Create a new lab test result.
+    - Attach it to an existing WooCommerce order via the advanced searchable dropdown.
+    - Upload a single result file (PDF or image) for the patient.
+  - When a result is published and has a file:
+    - The owning patient sees it in the portal’s **Lab Results** section.
+    - Unseen results are counted and can be acknowledged.
+
+---
+
+### Patient Experience
+
+- **1. Access the portal**
+  - Visit `https://yourdomain.com/lab-portal`.
+
+- **2. Authenticate**
+  - New patients:
+    - Fill in first name, last name, national ID and mobile number.
+    - Accept the terms and request an OTP via SMS.
+    - Enter the 6-digit code to complete registration and login.
+  - Existing patients:
+    - Enter mobile number.
+    - Receive OTP and verify to log in.
+
+- **3. Use the dashboard**
+  - Review profile and update identity/address fields.
+  - Browse relevant lab packages and services.
+  - Book appointments (date/time) according to available slots.
+  - Create orders with optional insurance data and discount codes.
+  - View order status, invoice PDFs, and available lab test results.
+
+---
+
+### Admin Experience
+
+- **Lab configuration**
+  - Design products and packages that reflect your real‑world lab services.
+  - Map each package to its underlying test products to keep reporting consistent.
+
+- **Operations & support**
+  - Define and maintain appointment availability per delivery method.
+  - Attach lab test results to orders after processing samples.
+  - Inspect logs when troubleshooting OTP delivery and login/registration issues.
+  - Optionally add **insurance fee** as a WooCommerce fee item per order from the admin interface.
+
+---
+
+### Security Considerations
+
+- **Authentication & authorization**
+  - All AJAX endpoints are protected using **WordPress nonces** and capability checks where appropriate.
+  - Sensitive endpoints (orders, invoices, test results) always validate the **current user’s ownership** of the resource.
+
+- **OTP handling**
+  - Codes are:
+    - Short‑lived (2 minute expiry).
+    - Limited to a small number of verification attempts.
+    - Cleaned up regularly via a scheduled cron task.
+
+- **File uploads**
+  - Lab results are stored in a dedicated subdirectory under `uploads` and shielded from directory listing.
+  - Profile pictures are resized to reasonable dimensions and old files are cleaned up.
+
+- **Data integrity**
+  - Appointment slots are updated transactionally when orders are created, to avoid double-booking.
+  - All user input is sanitized before being persisted to the database.
+
+---
+
+### Development Notes
+
+- **Code style**
+  - Namespaced classes under `APL\Classes`.
+  - Separation between:
+    - Business logic (appointments, lab results, SMS, orders).
+    - Integration layers (WooCommerce, National Payamak).
+    - Presentation (Tailwind templates + custom CSS/JS).
+
+- **Extensibility**
+  - Most behavior is hooked into WordPress and WooCommerce via standard actions/filters.
+  - The SMS handler and OTP logic can be swapped or extended for other gateways.
+  - The portal front-end is built as a single-page layout, making it straightforward to re-skin while reusing back-end endpoints.
+
+---
+
+### License
+
+This plugin is released under the **GPL v2 or later**, in line with the WordPress and WooCommerce ecosystems.  
+See the plugin header in `arta-poyeshLab.php` for the canonical license declaration.
+
+
