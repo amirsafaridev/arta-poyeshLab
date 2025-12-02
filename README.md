@@ -1,6 +1,43 @@
 # Arta PoyeshLab - WordPress SMS Authentication Plugin
 
-A comprehensive WordPress plugin for mobile-based authentication and user registration using SMS verification. This plugin provides a secure, user-friendly login and registration system integrated with MeliPayamak SMS gateway.
+Arta PoyeshLab is a production-ready WordPress plugin that adds a complete, SMS-based authentication layer on top of the native WordPress user system. It is designed for portals (for example, lab or customer portals) where users sign in with their mobile number and a one-time password (OTP) instead of a traditional username/password.
+
+The plugin ships with a fully integrated front-end flow (`/lab-portal`), an admin settings panel, and an internal logging/monitoring system, so you can drop it into an existing WordPress installation and get a secure SMS login experience out of the box.
+
+## 💡 What This Plugin Adds to WordPress
+
+- **Passwordless SMS Authentication Flow**: Replaces the classic username/password experience (for the portal area) with an OTP-over-SMS login and registration flow based on mobile numbers.
+- **Dedicated Portal Endpoint**: Exposes a ready-to-use entry point at `/lab-portal` backed by custom templates for authentication and a user dashboard.
+- **Custom Admin Menu & Settings Pages**: Adds an `Arta PoyeshLab` menu in the WordPress admin with separate screens for SMS configuration, UI customization, and system logs.
+- **Centralized Logging Layer**: Persists the last 50 important events (OTP sends, logins, registrations, verifications) in WordPress, with an admin UI for inspection and maintenance.
+- **Controlled OTP Lifecycle**: Implements OTP generation, storage, expiration, and attempt limiting, abstracted away from theme code.
+- **Production-focused DX**: Includes a test SMS code (`939393`) and a built-in connection test panel to simplify local development and staging.
+
+## 🧱 Architecture & Technical Overview
+
+- **Modular OOP Structure**  
+  - `apl-main.php` boots the plugin and wires together the core services.  
+  - Dedicated classes for each concern (`apl-sms-handler.php`, `apl-auth.php`, `apl-logger.php`, `apl-admin-settings.php`, `apl-ajax-handlers.php`, `apl-cron.php`, `apl-my-account.php`) keep responsibilities separated and easier to maintain.
+
+- **OTP Workflow & Storage**  
+  - OTP codes are generated and stored in the WordPress options table (`wp_options`) along with metadata such as expiration timestamp and attempt count.  
+  - Codes automatically expire after 2 minutes and are rejected after 3 failed attempts, reducing the attack surface for brute-force guessing.
+
+- **Logging Subsystem**  
+  - A dedicated logger service (`apl-logger.php`) records the last 50 significant events.  
+  - Logs are stored in WordPress and surfaced in a custom admin screen, making it easy to debug SMS delivery issues and authentication flows in production.
+
+- **Asynchronous UX with AJAX**  
+  - AJAX handlers (`apl-ajax-handlers.php`) are used for actions such as sending OTPs and validating codes, so users don't have to experience full page reloads during the authentication flow.
+
+- **Template & Theme Isolation**  
+  - All front-end pieces for the portal live under `include/template/` (`layout.php`, `auth.php`, `dashbord.php`), keeping plugin logic and theme presentation separate and making it easier to customize or override templates.
+
+- **Security-Oriented Defaults**  
+  - Short-lived OTP codes and strict attempt limits.  
+  - WordPress-native session handling for authenticated users.  
+  - Centralized validation and sanitization inside the auth and SMS handler classes.  
+  - Clear separation between public-facing endpoints and privileged admin actions.
 
 ## 🚀 Features
 
@@ -40,32 +77,6 @@ A comprehensive WordPress plugin for mobile-based authentication and user regist
 - PHP 7.4 or higher
 - Active MeliPayamak account with API access
 - WordPress admin access for configuration
-
-## 🔧 Installation
-
-### Method 1: Manual Installation
-
-1. **Download the Plugin**
-   ```bash
-   # Clone or download the repository
-   git clone https://github.com/yourusername/arta-poyeshLab.git
-   ```
-
-2. **Upload to WordPress**
-   - Copy the `arta-poyeshLab` folder to your WordPress plugins directory:
-     ```
-     wp-content/plugins/arta-poyeshLab/
-     ```
-
-3. **Activate the Plugin**
-   - Navigate to **Plugins** in your WordPress admin panel
-   - Find **"Arta PoyeshLab"** and click **Activate**
-
-### Method 2: WordPress Admin Upload
-
-1. Go to **Plugins → Add New → Upload Plugin**
-2. Select the plugin zip file
-3. Click **Install Now** and then **Activate**
 
 ## ⚙️ Configuration
 
