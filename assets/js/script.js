@@ -739,6 +739,11 @@ function showDashboard() {
     
     // Initialize file upload when dashboard is shown
     setTimeout(initializeFileUpload, 100);
+    
+    // Load recent activities after showing dashboard
+    setTimeout(function() {
+        loadRecentActivities();
+    }, 300);
 }
 
 function logout() {
@@ -4560,17 +4565,18 @@ jQuery(document).ready(function($) {
     setTimeout(function() {
         loadTestResultsNotification();
         
-        // Load recent activities if dashboard is visible and overview section is active
+        // Load recent activities if dashboard is visible (for already logged in users)
         const dashboard = document.getElementById('dashboard');
-        const overviewSection = document.getElementById('overviewSection');
-        if (dashboard && 
-            !dashboard.classList.contains('hidden') && 
-            dashboard.offsetParent !== null &&
-            overviewSection && 
-            !overviewSection.classList.contains('hidden') &&
-            overviewSection.offsetParent !== null &&
-            currentSection === 'overview') {
-            loadRecentActivities();
+        if (dashboard && dashboard.offsetParent !== null) {
+            // Make sure overview section is active
+            const overviewSection = document.getElementById('overviewSection');
+            if (overviewSection && overviewSection.offsetParent !== null) {
+                // Initialize currentSection if not set
+                if (!currentSection || currentSection === '') {
+                    currentSection = 'overview';
+                }
+                loadRecentActivities();
+            }
         }
-    }, 200);
+    }, 300);
 });

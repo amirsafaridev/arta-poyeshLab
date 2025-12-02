@@ -10,8 +10,8 @@ class APL_My_Account {
         $request_uri = trim($_SERVER['REQUEST_URI'], '/');
         $home_path = trim(parse_url(home_url(), PHP_URL_PATH), '/');
         
-        if ($home_path) {
-            $request_uri = str_replace($home_path, '', $request_uri);
+        if ($home_path && strpos($request_uri, $home_path) === 0) {
+            $request_uri = substr($request_uri, strlen($home_path));
             $request_uri = trim($request_uri, '/');
         }
         
@@ -26,8 +26,8 @@ class APL_My_Account {
         $request_uri = trim($_SERVER['REQUEST_URI'], '/');
         $home_path = trim(parse_url(home_url(), PHP_URL_PATH), '/');
         
-        if ($home_path) {
-            $request_uri = str_replace($home_path, '', $request_uri);
+        if ($home_path && strpos($request_uri, $home_path) === 0) {
+            $request_uri = substr($request_uri, strlen($home_path));
             $request_uri = trim($request_uri, '/');
         }
         
